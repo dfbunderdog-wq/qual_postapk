@@ -44,7 +44,6 @@ const WMSAuth = () => {
     password: "",
     first_name: "",
     last_name: "",
-    role: "operator",
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
@@ -66,10 +65,13 @@ const WMSAuth = () => {
 
     try {
       console.log("🔐 Tentativo login con:", { email: formData.email });
+      console.log("🌐 URL endpoint:", `${DIRECTUS_URL}/auth/login`);
+      console.log("🔒 Protocol check:", window.location.protocol);
 
       const response = await fetch(`${DIRECTUS_URL}/auth/login`, {
         method: "POST",
         mode: "cors",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -80,6 +82,7 @@ const WMSAuth = () => {
       });
 
       console.log("📡 Response status:", response.status);
+      console.log("🔒 Response headers:", response.headers);
 
       const data = await response.json();
       console.log("📦 Response data:", data);
@@ -90,6 +93,7 @@ const WMSAuth = () => {
 
         const userResponse = await fetch(`${DIRECTUS_URL}/users/me`, {
           mode: "cors",
+          credentials: "include",
           headers: {
             Authorization: `Bearer ${data.data.access_token}`,
           },
@@ -114,11 +118,16 @@ const WMSAuth = () => {
       console.error("❌ Login Error Details:", error);
       let errorMessage = "Errore di connessione. ";
 
-      if (error.name === "TypeError") {
+      if (
+        error.name === "TypeError" &&
+        error.message.includes("Failed to fetch")
+      ) {
+        errorMessage += "Problema HTTPS/CORS. Avvia con: HTTPS=true npm start";
+      } else if (error.message.includes("Mixed Content")) {
         errorMessage +=
-          "Problema CORS o rete. Verifica configurazione Directus.";
-      } else if (error.message.includes("Failed to fetch")) {
-        errorMessage += "Server non raggiungibile o CORS non configurato.";
+          "Server HTTPS richiede app HTTPS. Usa: HTTPS=true npm start";
+      } else if (error.name === "TypeError") {
+        errorMessage += "Verifica configurazione CORS su Directus.";
       } else {
         errorMessage += "Verifica che Directus sia raggiungibile.";
       }
@@ -141,12 +150,12 @@ const WMSAuth = () => {
         email: formData.email,
         first_name: formData.first_name,
         last_name: formData.last_name,
-        role: formData.role,
       });
 
       const response = await fetch(`${DIRECTUS_URL}/users`, {
         method: "POST",
         mode: "cors",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -155,7 +164,6 @@ const WMSAuth = () => {
           password: formData.password,
           first_name: formData.first_name,
           last_name: formData.last_name,
-          role: formData.role,
           status: "active",
         }),
       });
@@ -175,7 +183,6 @@ const WMSAuth = () => {
           ...formData,
           first_name: "",
           last_name: "",
-          role: "operator",
         });
       } else {
         setMessage({
@@ -204,7 +211,6 @@ const WMSAuth = () => {
       password: "",
       first_name: "",
       last_name: "",
-      role: "operator",
     });
     setMessage({ type: "success", text: "Logout effettuato con successo!" });
   };
@@ -217,17 +223,15 @@ const WMSAuth = () => {
       password: "",
       first_name: "",
       last_name: "",
-      role: "operator",
     });
   };
 
-  // Simula login per demo
   const demoLogin = () => {
     setUser({
+      id: "12345",
       first_name: "Mario",
       last_name: "Rossi",
       email: "mario.rossi@example.com",
-      role: "manager",
       status: "active",
     });
     setIsAuthenticated(true);
@@ -296,10 +300,8 @@ const WMSAuth = () => {
                 <p className="text-lg font-bold text-green-900">{user.email}</p>
               </div>
               <div className="bg-purple-50 p-4 rounded-lg">
-                <p className="text-sm text-purple-600 font-medium">Ruolo</p>
-                <p className="text-lg font-bold text-purple-900 capitalize">
-                  {user.role}
-                </p>
+                <p className="text-sm text-purple-600 font-medium">ID Utente</p>
+                <p className="text-lg font-bold text-purple-900">{user.id}</p>
               </div>
               <div className="bg-yellow-50 p-4 rounded-lg">
                 <p className="text-sm text-yellow-600 font-medium">Status</p>
@@ -511,7 +513,7 @@ const WMSAuth = () => {
             </div>
 
             {/* Password */}
-            <div className="mb-4">
+            <div className="mb-6">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Password
               </label>
@@ -539,25 +541,6 @@ const WMSAuth = () => {
                 </button>
               </div>
             </div>
-
-            {/* Ruolo per la registrazione */}
-            {!isLogin && (
-              <div className="mb-6">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Ruolo
-                </label>
-                <select
-                  name="role"
-                  value={formData.role}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
-                  <option value="operator">Operatore</option>
-                  <option value="supervisor">Supervisore</option>
-                  <option value="manager">Manager</option>
-                </select>
-              </div>
-            )}
 
             {/* Submit Button */}
             <button
@@ -598,8 +581,10 @@ const WMSAuth = () => {
         <div className="mt-4 text-center">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <p className="text-xs text-blue-700 font-medium">
-              🔧 Debug: Apri Console del Browser (F12) per vedere i dettagli
-              delle chiamate API
+              🔧 Server HTTPS rilevato - Verifica configurazione SSL/CORS
+            </p>
+            <p className="text-xs text-blue-600 mt-1">
+              Avvia con: HTTPS=true npm start per compatibilità HTTPS
             </p>
           </div>
         </div>
