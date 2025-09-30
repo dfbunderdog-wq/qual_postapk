@@ -107,19 +107,16 @@ const WMSSystem = () => {
     }
 
     try {
-      const response = await fetch(
-        `https://udog-wms.it.com/extensions/stored-procedures`,
-        {
-          method: "POST",
-          mode: "cors",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(requestData),
-        }
-      );
+      const response = await fetch(`${DIRECTUS_URL}/stored-procedures`, {
+        method: "POST",
+        mode: "cors",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestData),
+      });
 
       const result = await response.json();
 
