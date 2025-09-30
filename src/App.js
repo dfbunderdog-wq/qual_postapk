@@ -51,6 +51,114 @@ const WMSSystem = () => {
     return pezzi * colli;
   };
 
+  const handleRegister = async () => {
+    setLoading(true);
+    setMessage({ type: "", text: "" });
+
+    try {
+      const response = await fetch(`${DIRECTUS_URL}/users`, {
+        method: "POST",
+        mode: "cors",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          status: "active",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage({
+          type: "success",
+          text: "Registrazione completata! Ora puoi effettuare il login.",
+        });
+        setIsLogin(true);
+        setFormData({
+          email: "",
+          password: "",
+          first_name: "",
+          last_name: "",
+        });
+      } else {
+        setMessage({
+          type: "error",
+          text: data.errors?.[0]?.message || "Errore durante la registrazione",
+        });
+      }
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: "Errore di connessione. Verifica configurazione Directus.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    setLoading(true);
+    setMessage({ type: "", text: "" });
+
+    try {
+      const response = await fetch(`${DIRECTUS_URL}/auth/login`, {
+        method: "POST",
+        mode: "cors",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem("directus_token", data.data.access_token);
+        localStorage.setItem("directus_refresh_token", data.data.refresh_token);
+
+        const userResponse = await fetch(`${DIRECTUS_URL}/users/me`, {
+          mode: "cors",
+          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${data.data.access_token}`,
+          },
+        });
+
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          setUser(userData.data);
+          setCurrentPage("dashboard");
+          setMessage({
+            type: "success",
+            text: "Login effettuato con successo!",
+          });
+        }
+      } else {
+        setMessage({
+          type: "error",
+          text: data.errors?.[0]?.message || "Credenziali non valide",
+        });
+      }
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: "Errore di connessione. Avvia con HTTPS=true npm start per server HTTPS.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const demoLogin = () => {
     setUser({
       id: "12345",
@@ -74,12 +182,11 @@ const WMSSystem = () => {
     setMessage({ type: "", text: "" });
   };
 
-  // PAGINA RICEVIMENTO MATERIALE
+  // PAGINA RICEVIMENTO
   if (currentPage === "ricevimento" && user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="container mx-auto px-4 py-8 max-w-4xl">
-          {/* Banner Info Utente */}
           <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-sm p-3 mb-4">
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center space-x-4">
@@ -98,21 +205,18 @@ const WMSSystem = () => {
                   <span className="text-gray-600">{user.id}</span>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  {user.status}
-                </span>
-              </div>
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                {user.status}
+              </span>
             </div>
           </div>
 
-          {/* Header Ricevimento */}
           <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center space-x-4">
                 <button
                   onClick={() => setCurrentPage("dashboard")}
-                  className="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg transition-colors"
+                  className="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg"
                 >
                   ←
                 </button>
@@ -137,14 +241,12 @@ const WMSSystem = () => {
             </div>
           </div>
 
-          {/* Form Ricevimento */}
           <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
             <h2 className="text-2xl font-bold mb-6 text-gray-900">
               Dati di Ricevimento
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              {/* Part Number */}
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">
                   Part Number
@@ -154,12 +256,11 @@ const WMSSystem = () => {
                   name="partNumber"
                   value={ricevimentoData.partNumber}
                   onChange={handleRicevimentoChange}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-lg"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-lg"
                   placeholder="Inserisci Part Number"
                 />
               </div>
 
-              {/* Numero Pezzi */}
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">
                   Numero Pezzi per Collo
@@ -169,13 +270,12 @@ const WMSSystem = () => {
                   name="numeroPezzi"
                   value={ricevimentoData.numeroPezzi}
                   onChange={handleRicevimentoChange}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-lg"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-lg"
                   placeholder="0"
                   min="0"
                 />
               </div>
 
-              {/* Numero Colli */}
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">
                   Numero Colli
@@ -185,13 +285,12 @@ const WMSSystem = () => {
                   name="numeroColli"
                   value={ricevimentoData.numeroColli}
                   onChange={handleRicevimentoChange}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-lg"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-lg"
                   placeholder="0"
                   min="0"
                 />
               </div>
 
-              {/* Totale Calcolato */}
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">
                   Totale Pezzi
@@ -202,13 +301,10 @@ const WMSSystem = () => {
               </div>
             </div>
 
-            {/* Riepilogo */}
             {ricevimentoData.partNumber &&
               (ricevimentoData.numeroPezzi || ricevimentoData.numeroColli) && (
                 <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                  <h3 className="font-bold text-gray-900 mb-2">
-                    Riepilogo Ricevimento:
-                  </h3>
+                  <h3 className="font-bold text-gray-900 mb-2">Riepilogo:</h3>
                   <div className="text-sm text-gray-700 space-y-1">
                     <p>
                       <span className="font-medium">Part Number:</span>{" "}
@@ -223,18 +319,15 @@ const WMSSystem = () => {
                       {ricevimentoData.numeroColli || 0}
                     </p>
                     <p className="text-lg font-bold text-green-600">
-                      <span className="font-medium">
-                        Totale pezzi ricevuti:
-                      </span>{" "}
-                      {calcolaTotale()}
+                      <span className="font-medium">Totale:</span>{" "}
+                      {calcolaTotale()} pezzi
                     </p>
                   </div>
                 </div>
               )}
 
-            {/* Pulsanti */}
             <div className="flex space-x-4">
-              <button className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 font-bold text-lg">
+              <button className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 font-bold">
                 Conferma Ricevimento
               </button>
               <button
@@ -245,146 +338,10 @@ const WMSSystem = () => {
                     numeroColli: "",
                   })
                 }
-                className="flex-1 bg-gray-600 text-white py-3 px-6 rounded-lg hover:bg-gray-700 font-bold text-lg"
+                className="flex-1 bg-gray-600 text-white py-3 px-6 rounded-lg hover:bg-gray-700 font-bold"
               >
                 Reset
               </button>
-            </div>
-          </div>
-
-          {/* Statistiche Ricevimento */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-lg p-4 text-center shadow">
-              <h4 className="text-xl font-bold text-green-600">15</h4>
-              <p className="text-gray-600 text-sm">Ricevimenti Oggi</p>
-            </div>
-            <div className="bg-white rounded-lg p-4 text-center shadow">
-              <h4 className="text-xl font-bold text-blue-600">842</h4>
-              <p className="text-gray-600 text-sm">Pezzi Ricevuti Oggi</p>
-            </div>
-            <div className="bg-white rounded-lg p-4 text-center shadow">
-              <h4 className="text-xl font-bold text-purple-600">23</h4>
-              <p className="text-gray-600 text-sm">Colli Processati</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // PAGINA MAGAZZINO
-  if (currentPage === "warehouse" && user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
-          {/* Banner Info Utente */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-sm p-3 mb-4">
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <User className="h-4 w-4 text-gray-500" />
-                  <span className="text-gray-700 font-medium">
-                    {user.first_name} {user.last_name}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Mail className="h-4 w-4 text-gray-500" />
-                  <span className="text-gray-600">{user.email}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-gray-500">ID:</span>
-                  <span className="text-gray-600">{user.id}</span>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  {user.status}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => setCurrentPage("dashboard")}
-                  className="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg transition-colors"
-                >
-                  ←
-                </button>
-                <div className="bg-indigo-600 p-3 rounded-xl">
-                  <Package className="h-8 w-8 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">
-                    Gestione Magazzino
-                  </h1>
-                  <p className="text-gray-600">Seleziona operazione</p>
-                </div>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-white rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all">
-              <div className="text-center">
-                <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Package className="h-10 w-10 text-green-600" />
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-gray-900">
-                  Ricevimento
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Gestisci arrivo nuova merce
-                </p>
-                <button
-                  onClick={() => setCurrentPage("ricevimento")}
-                  className="w-full bg-green-600 text-white py-4 rounded-xl hover:bg-green-700 font-bold"
-                >
-                  Avvia Ricevimento
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all">
-              <div className="text-center">
-                <div className="bg-blue-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Package className="h-10 w-10 text-blue-600" />
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-gray-900">
-                  Gestione Stock
-                </h3>
-                <p className="text-gray-600 mb-6">Visualizza inventario</p>
-                <button className="w-full bg-blue-600 text-white py-4 rounded-xl hover:bg-blue-700 font-bold">
-                  Visualizza Stock
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 grid grid-cols-4 gap-4">
-            <div className="bg-white rounded-lg p-4 text-center shadow">
-              <h4 className="text-xl font-bold text-green-600">24</h4>
-              <p className="text-gray-600 text-sm">Ricevimenti</p>
-            </div>
-            <div className="bg-white rounded-lg p-4 text-center shadow">
-              <h4 className="text-xl font-bold text-blue-600">1,234</h4>
-              <p className="text-gray-600 text-sm">Articoli</p>
-            </div>
-            <div className="bg-white rounded-lg p-4 text-center shadow">
-              <h4 className="text-xl font-bold text-yellow-600">89%</h4>
-              <p className="text-gray-600 text-sm">Riempimento</p>
-            </div>
-            <div className="bg-white rounded-lg p-4 text-center shadow">
-              <h4 className="text-xl font-bold text-purple-600">12</h4>
-              <p className="text-gray-600 text-sm">Zone</p>
             </div>
           </div>
         </div>
@@ -397,7 +354,6 @@ const WMSSystem = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="container mx-auto px-4 py-8 max-w-6xl">
-          {/* Banner Info Utente */}
           <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-sm p-3 mb-4">
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center space-x-4">
@@ -416,11 +372,9 @@ const WMSSystem = () => {
                   <span className="text-gray-600">{user.id}</span>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  {user.status}
-                </span>
-              </div>
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                {user.status}
+              </span>
             </div>
           </div>
 
@@ -461,9 +415,7 @@ const WMSSystem = () => {
                 <Package className="h-6 w-6 text-green-600" />
               </div>
               <h3 className="text-xl font-bold mb-3">Ricevimento Materiale</h3>
-              <p className="text-gray-600 mb-4">
-                Gestisci l'arrivo di nuova merce e registra i prodotti ricevuti
-              </p>
+              <p className="text-gray-600 mb-4">Gestisci arrivo nuova merce</p>
               <button
                 onClick={() => setCurrentPage("ricevimento")}
                 className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-semibold"
@@ -474,24 +426,10 @@ const WMSSystem = () => {
 
             <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
               <div className="bg-blue-100 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <svg
-                  className="h-6 w-6 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-                  />
-                </svg>
+                <Package className="h-6 w-6 text-blue-600" />
               </div>
               <h3 className="text-xl font-bold mb-3">Stock Materiale</h3>
-              <p className="text-gray-600 mb-4">
-                Visualizza inventario e controlla le scorte disponibili
-              </p>
+              <p className="text-gray-600 mb-4">Visualizza inventario</p>
               <button className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold">
                 Stock Materiale
               </button>
@@ -499,24 +437,10 @@ const WMSSystem = () => {
 
             <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
               <div className="bg-red-100 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <svg
-                  className="h-6 w-6 text-red-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                  />
-                </svg>
+                <Package className="h-6 w-6 text-red-600" />
               </div>
               <h3 className="text-xl font-bold mb-3">Uscita Materiale</h3>
-              <p className="text-gray-600 mb-4">
-                Gestisci le uscite di materiale e spedizioni
-              </p>
+              <p className="text-gray-600 mb-4">Gestisci uscite materiale</p>
               <button className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 font-semibold">
                 Uscita Materiale
               </button>
@@ -530,7 +454,7 @@ const WMSSystem = () => {
             </div>
             <div className="bg-white rounded-lg p-4 text-center shadow">
               <h4 className="text-2xl font-bold text-gray-900">56</h4>
-              <p className="text-gray-600">Ordini Oggi</p>
+              <p className="text-gray-600">Ordini</p>
             </div>
             <div className="bg-white rounded-lg p-4 text-center shadow">
               <h4 className="text-2xl font-bold text-gray-900">€12,450</h4>
@@ -561,7 +485,7 @@ const WMSSystem = () => {
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           <div className="flex mb-6">
             <button
-              className={`flex-1 py-3 px-4 text-sm font-semibold rounded-lg transition-colors ${
+              className={`flex-1 py-3 px-4 text-sm font-semibold rounded-lg ${
                 isLogin
                   ? "bg-indigo-600 text-white"
                   : "bg-gray-100 text-gray-600"
@@ -571,7 +495,7 @@ const WMSSystem = () => {
               Login
             </button>
             <button
-              className={`flex-1 py-3 px-4 text-sm font-semibold rounded-lg ml-2 transition-colors ${
+              className={`flex-1 py-3 px-4 text-sm font-semibold rounded-lg ml-2 ${
                 !isLogin
                   ? "bg-indigo-600 text-white"
                   : "bg-gray-100 text-gray-600"
@@ -582,14 +506,12 @@ const WMSSystem = () => {
             </button>
           </div>
 
-          <div className="mb-4">
-            <button
-              onClick={demoLogin}
-              className="w-full bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600 font-semibold"
-            >
-              🚀 Demo Login
-            </button>
-          </div>
+          <button
+            onClick={demoLogin}
+            className="w-full bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600 font-semibold mb-4"
+          >
+            🚀 Demo Login
+          </button>
 
           {message.text && (
             <div
@@ -619,7 +541,7 @@ const WMSSystem = () => {
                   name="first_name"
                   value={formData.first_name}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg"
                   placeholder="Nome"
                 />
               </div>
@@ -632,7 +554,7 @@ const WMSSystem = () => {
                   name="last_name"
                   value={formData.last_name}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg"
                   placeholder="Cognome"
                 />
               </div>
@@ -648,7 +570,7 @@ const WMSSystem = () => {
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg"
               placeholder="email@example.com"
             />
           </div>
@@ -663,7 +585,7 @@ const WMSSystem = () => {
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 pr-10"
+                className="w-full px-3 py-3 border border-gray-300 rounded-lg pr-10"
                 placeholder="Password"
               />
               <button
@@ -681,6 +603,7 @@ const WMSSystem = () => {
           </div>
 
           <button
+            onClick={isLogin ? handleLogin : handleRegister}
             disabled={loading}
             className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-semibold"
           >
@@ -694,7 +617,7 @@ const WMSSystem = () => {
             >
               {isLogin
                 ? "Non hai un account? Registrati"
-                : "Hai già un account? Accedi"}
+                : "Hai account? Accedi"}
             </button>
           </div>
         </div>
@@ -702,7 +625,8 @@ const WMSSystem = () => {
         <div className="mt-6 text-center">
           <div className="bg-white/70 rounded-lg p-3">
             <span className="text-sm text-gray-600">
-              Configurato per: {DIRECTUS_URL}
+              Endpoint:{" "}
+              {isLogin ? `${DIRECTUS_URL}/auth/login` : `${DIRECTUS_URL}/users`}
             </span>
           </div>
         </div>
