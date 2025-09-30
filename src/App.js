@@ -75,10 +75,6 @@ const WMSSystem = () => {
 
     // Costruzione del JSON a due livelli
     const requestData = {
-      metadata: {
-        tag: "rice",
-        method: "POST",
-      },
       data: {
         procedureName: "ricevimento_materiale",
         jsonData: {
@@ -92,17 +88,38 @@ const WMSSystem = () => {
       },
     };
 
-    try {
-      const response = await fetch(`${DIRECTUS_URL}/stored-procedures`, {
-        method: "POST",
-        mode: "cors",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("directus_token")}`,
-        },
-        body: JSON.stringify(requestData),
+    // DEBUG: Logga i dati che stai inviando
+    console.log("Invio dati:", JSON.stringify(requestData, null, 2));
+
+    // Verifica il token
+    const token = localStorage.getItem("directus_token");
+    console.log("Token presente:", token ? "Sì" : "No");
+    console.log("Token value:", token);
+
+    // Se non c'è token, avvisa l'utente
+    if (!token) {
+      setMessage({
+        type: "error",
+        text: "Token di autenticazione mancante. Effettua il login reale, non Demo Login.",
       });
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://udog-wms.it.com/extensions/stored-procedures`,
+        {
+          method: "POST",
+          mode: "cors",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(requestData),
+        }
+      );
 
       const result = await response.json();
 
@@ -120,6 +137,14 @@ const WMSSystem = () => {
           numeroPezzi: "",
           numeroColli: "",
         });
+      } else if (response.status === 401) {
+        // Token scaduto - prova a fare refresh
+        setMessage({
+          type: "error",
+          text: "Sessione scaduta. Effettua nuovamente il login.",
+        });
+        // Opzionale: redirect automatico al login
+        // setCurrentPage("login");
       } else {
         setMessage({
           type: "error",
