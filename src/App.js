@@ -51,6 +51,92 @@ const WMSSystem = () => {
     return pezzi * colli;
   };
 
+  // NUOVA FUNZIONE PER CONFERMA RICEVIMENTO
+  const handleConfermaRicevimento = async () => {
+    // Validazione dati
+    if (!ricevimentoData.partNumber) {
+      setMessage({
+        type: "error",
+        text: "Inserire il Part Number",
+      });
+      return;
+    }
+
+    if (calcolaTotale() === 0) {
+      setMessage({
+        type: "error",
+        text: "Il totale pezzi deve essere maggiore di zero",
+      });
+      return;
+    }
+
+    setLoading(true);
+    setMessage({ type: "", text: "" });
+
+    // Costruzione del JSON a due livelli
+    const requestData = {
+      metadata: {
+        tag: "rice",
+        method: "POST",
+      },
+      data: {
+        procedureName: "ricevimento_materiale",
+        jsonData: {
+          partNumber: ricevimentoData.partNumber,
+          totalePezzi: calcolaTotale(),
+          numeroPezzi: parseFloat(ricevimentoData.numeroPezzi) || 0,
+          numeroColli: parseFloat(ricevimentoData.numeroColli) || 0,
+          timestamp: new Date().toISOString(),
+          userId: user.id,
+        },
+      },
+    };
+
+    try {
+      const response = await fetch(`${DIRECTUS_URL}/stored-procedures`, {
+        method: "POST",
+        mode: "cors",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("directus_token")}`,
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setMessage({
+          type: "success",
+          text: `Ricevimento confermato! Part Number: ${
+            ricevimentoData.partNumber
+          }, Totale: ${calcolaTotale()} pezzi`,
+        });
+
+        // Reset del form dopo successo
+        setRicevimentoData({
+          partNumber: "",
+          numeroPezzi: "",
+          numeroColli: "",
+        });
+      } else {
+        setMessage({
+          type: "error",
+          text: result.error || "Errore durante la conferma del ricevimento",
+        });
+      }
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: "Errore di connessione con il server",
+      });
+      console.error("Errore chiamata API:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleRegister = async () => {
     setLoading(true);
     setMessage({ type: "", text: "" });
@@ -241,6 +327,24 @@ const WMSSystem = () => {
             </div>
           </div>
 
+          {/* Messaggi di feedback */}
+          {message.text && (
+            <div
+              className={`mb-6 p-4 rounded-lg flex items-center ${
+                message.type === "error"
+                  ? "bg-red-50 text-red-700"
+                  : "bg-green-50 text-green-700"
+              }`}
+            >
+              {message.type === "error" ? (
+                <AlertCircle className="h-5 w-5 mr-3" />
+              ) : (
+                <CheckCircle className="h-5 w-5 mr-3" />
+              )}
+              <span>{message.text}</span>
+            </div>
+          )}
+
           <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
             <h2 className="text-2xl font-bold mb-6 text-gray-900">
               Dati di Ricevimento
@@ -249,7 +353,7 @@ const WMSSystem = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">
-                  Part Number
+                  Part Number *
                 </label>
                 <input
                   type="text"
@@ -258,6 +362,7 @@ const WMSSystem = () => {
                   onChange={handleRicevimentoChange}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-lg"
                   placeholder="Inserisci Part Number"
+                  disabled={loading}
                 />
               </div>
 
@@ -273,6 +378,7 @@ const WMSSystem = () => {
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-lg"
                   placeholder="0"
                   min="0"
+                  disabled={loading}
                 />
               </div>
 
@@ -288,6 +394,7 @@ const WMSSystem = () => {
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-lg"
                   placeholder="0"
                   min="0"
+                  disabled={loading}
                 />
               </div>
 
@@ -327,8 +434,12 @@ const WMSSystem = () => {
               )}
 
             <div className="flex space-x-4">
-              <button className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 font-bold">
-                Conferma Ricevimento
+              <button
+                onClick={handleConfermaRicevimento}
+                disabled={loading}
+                className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? "Invio in corso..." : "Conferma Ricevimento"}
               </button>
               <button
                 onClick={() =>
@@ -338,7 +449,8 @@ const WMSSystem = () => {
                     numeroColli: "",
                   })
                 }
-                className="flex-1 bg-gray-600 text-white py-3 px-6 rounded-lg hover:bg-gray-700 font-bold"
+                disabled={loading}
+                className="flex-1 bg-gray-600 text-white py-3 px-6 rounded-lg hover:bg-gray-700 font-bold disabled:opacity-50"
               >
                 Reset
               </button>
