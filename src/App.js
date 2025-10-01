@@ -75,6 +75,9 @@ const WMSSystem = () => {
 
     // Costruzione del JSON a due livelli
     const requestData = {
+      metadata: {
+        tag: "rice",
+      },
       data: {
         procedureName: "ricevimento_materiale",
         jsonData: {
@@ -109,8 +112,6 @@ const WMSSystem = () => {
     try {
       const response = await fetch(`${DIRECTUS_URL}/stored-procedures`, {
         method: "POST",
-        mode: "cors",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
