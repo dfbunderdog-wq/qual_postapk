@@ -121,12 +121,31 @@ const WMSSystem = () => {
 
       const result = await response.json();
 
+      // DEBUG: Mostra in console cosa ritorna il backend
+      console.log("Risposta dal backend:", result);
+      if (result.data && result.data[0]) {
+        console.log("Dati dalla procedure:", result.data[0]);
+        if (result.data[0].result) {
+          console.log(
+            "JSON dalla procedure:",
+            JSON.parse(result.data[0].result)
+          );
+        }
+      }
+
       if (response.ok && result.success) {
+        // Parsing del JSON restituito dalla procedure
+        const procedureResult = result.data[0]?.result
+          ? JSON.parse(result.data[0].result)
+          : null;
+
         setMessage({
-          type: "success",
-          text: `Ricevimento confermato! Part Number: ${
-            ricevimentoData.partNumber
-          }, Totale: ${calcolaTotale()} pezzi`,
+          type: procedureResult?.verificaCompletata ? "success" : "warning",
+          text:
+            procedureResult?.message ||
+            `Ricevimento confermato! Part Number: ${
+              ricevimentoData.partNumber
+            }, Totale: ${calcolaTotale()} pezzi`,
         });
 
         // Reset del form dopo successo
