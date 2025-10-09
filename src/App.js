@@ -29,7 +29,7 @@ const WMSSystem = () => {
   const [message, setMessage] = useState({ type: "", text: "" });
   const [user, setUser] = useState(null);
 
-  const DIRECTUS_URL = "https://udog-wms.it.com/directus";
+  const DIRECTUS_URL = "https://qual.udog-wms.it.com/directus";
 
   const handleInputChange = (e) => {
     setFormData({
