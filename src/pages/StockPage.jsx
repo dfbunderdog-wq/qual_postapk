@@ -5,8 +5,10 @@ import {
   Mail,
   AlertCircle,
   CheckCircle,
+  QrCode,
 } from "lucide-react";
 import { DIRECTUS_URL } from "../utils/constants";
+import QrScanner from "../components/QrScanner";
 
 const StockPage = ({ user, onLogout, onNavigate }) => {
   const [stockData, setStockData] = useState({
@@ -16,6 +18,8 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
+  const [scannerActive, setScannerActive] = useState(false);
+  const [scannedValue, setScannedValue] = useState("");
 
   const handleStockChange = (e) => {
     setStockData({
@@ -28,6 +32,37 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
     const pezzi = parseFloat(stockData.numeroPezzi) || 0;
     const colli = parseFloat(stockData.numeroColli) || 0;
     return pezzi * colli;
+  };
+
+  const handleQrScan = (decodedText) => {
+    console.log("📱 QR Code scansionato:", decodedText);
+    
+    // Salva il valore scansionato
+    setScannedValue(decodedText);
+    
+    // Popola automaticamente il Part Number con il valore QR
+    setStockData({
+      ...stockData,
+      partNumber: decodedText,
+    });
+    
+    // Chiudi lo scanner
+    setScannerActive(false);
+    
+    // Mostra messaggio successo
+    setMessage({
+      type: "success",
+      text: `QR Code scansionato: ${decodedText}`,
+    });
+  };
+
+  const handleOpenScanner = () => {
+    setScannerActive(true);
+    setMessage({ type: "", text: "" });
+  };
+
+  const handleCloseScanner = () => {
+    setScannerActive(false);
   };
 
   const handleConfermaStock = async () => {
@@ -71,7 +106,7 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
     console.log("Invio dati Stock:", JSON.stringify(requestData, null, 2));
 
     const token = localStorage.getItem("directus_token");
-    console.log("Token presente:", token ? "Sì" : "No");
+    console.log("Token presente:", token ? "SÃ¬" : "No");
 
     if (!token) {
       setMessage({
@@ -183,7 +218,7 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
                 onClick={() => onNavigate("dashboard")}
                 className="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg"
               >
-                ←
+                â†
               </button>
               <div className="bg-blue-600 p-3 rounded-xl">
                 <Package className="h-8 w-8 text-white" />
@@ -229,6 +264,33 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
           <h2 className="text-2xl font-bold mb-6 text-gray-900">
             Dati di Stock
           </h2>
+
+          {/* Bottone Scansiona QR */}
+          <div className="mb-6">
+            <button
+              onClick={handleOpenScanner}
+              disabled={loading}
+              className="w-full bg-purple-600 text-white py-3 px-6 rounded-lg hover:bg-purple-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            >
+              <QrCode className="h-5 w-5 mr-2" />
+              📷 Scansiona QR Code
+            </button>
+          </div>
+
+          {/* Valore QR scansionato */}
+          {scannedValue && (
+            <div className="mb-6 bg-purple-50 border border-purple-200 rounded-lg p-4">
+              <div className="flex items-center">
+                <QrCode className="h-5 w-5 text-purple-600 mr-2" />
+                <span className="font-bold text-purple-900">
+                  QR Scansionato:
+                </span>
+                <span className="ml-2 text-purple-700 font-mono">
+                  {scannedValue}
+                </span>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
@@ -339,6 +401,14 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
           </div>
         </div>
       </div>
+
+      {/* QR Scanner Modal */}
+      {scannerActive && (
+        <QrScanner
+          onScanSuccess={handleQrScan}
+          onClose={handleCloseScanner}
+        />
+      )}
     </div>
   );
 };
