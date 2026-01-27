@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import {
-  Eye,
-  EyeOff,
-  Package,
-  AlertCircle,
-  CheckCircle,
-} from "lucide-react";
+import { Eye, EyeOff, Package, AlertCircle, CheckCircle } from "lucide-react";
 import { DIRECTUS_URL } from "../utils/constants";
 
 const LoginPage = ({ onLogin }) => {
@@ -35,7 +29,7 @@ const LoginPage = ({ onLogin }) => {
       const response = await fetch(`${DIRECTUS_URL}/users`, {
         method: "POST",
         mode: "cors",
-        credentials: "include",
+        // credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -86,7 +80,7 @@ const LoginPage = ({ onLogin }) => {
       const response = await fetch(`${DIRECTUS_URL}/auth/login`, {
         method: "POST",
         mode: "cors",
-        credentials: "include",
+        // credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -104,7 +98,7 @@ const LoginPage = ({ onLogin }) => {
 
         const userResponse = await fetch(`${DIRECTUS_URL}/users/me`, {
           mode: "cors",
-          credentials: "include",
+          // credentials: "include",
           headers: {
             Authorization: `Bearer ${data.data.access_token}`,
           },
