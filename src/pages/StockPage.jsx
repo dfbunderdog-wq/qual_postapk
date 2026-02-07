@@ -5,181 +5,154 @@ import {
   Mail,
   AlertCircle,
   CheckCircle,
-  QrCode,
+  Camera,
+  Edit,
 } from "lucide-react";
+import { Capacitor } from '@capacitor/core';
 import { DIRECTUS_URL } from "../utils/constants";
-import QrScanner from "../components/QrScanner";
+import QrScannerWeb from "../components/QrScannerWeb";
+import QrScannerNative from "../components/QrScannerNative";
 
 const StockPage = ({ user, onLogout, onNavigate }) => {
-  const [stockData, setStockData] = useState({
-    partNumber: "",
-    numeroPezzi: "",
-    numeroColli: "",
-  });
+  // State per i campi
+  const [udmValue, setUdmValue] = useState("");
+  const [mappaValue, setMappaValue] = useState("");
+  
+  // State per modalità edit
+  const [udmEditMode, setUdmEditMode] = useState(false);
+  const [mappaEditMode, setMappaEditMode] = useState(false);
+  
+  // State per scanner
+  const [scannerActive, setScannerActive] = useState(false);
+  const [scannerTarget, setScannerTarget] = useState(null); // 'udm' o 'mappa'
+  
+  // State per UI
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
-  const [scannerActive, setScannerActive] = useState(false);
-  const [scannedValue, setScannedValue] = useState("");
 
-  const handleStockChange = (e) => {
-    setStockData({
-      ...stockData,
-      [e.target.name]: e.target.value,
-    });
-  };
+  // Determina quale componente scanner usare
+  const ScannerComponent = Capacitor.isNativePlatform() 
+    ? QrScannerNative 
+    : QrScannerWeb;
 
-  const calcolaTotaleStock = () => {
-    const pezzi = parseFloat(stockData.numeroPezzi) || 0;
-    const colli = parseFloat(stockData.numeroColli) || 0;
-    return pezzi * colli;
-  };
-
-  const handleQrScan = (decodedText) => {
-    console.log("📱 QR Code scansionato:", decodedText);
-    
-    // Salva il valore scansionato
-    setScannedValue(decodedText);
-    
-    // Popola automaticamente il Part Number con il valore QR
-    setStockData({
-      ...stockData,
-      partNumber: decodedText,
-    });
-    
-    // Chiudi lo scanner
-    setScannerActive(false);
-    
-    // Mostra messaggio successo
-    setMessage({
-      type: "success",
-      text: `QR Code scansionato: ${decodedText}`,
-    });
-  };
-
-  const handleOpenScanner = () => {
+  // Handler per aprire scanner UDM (multiplo)
+  const handleScanUdm = () => {
+    console.log("📷 Apertura scanner UDM (multiplo)");
+    setScannerTarget("udm");
     setScannerActive(true);
     setMessage({ type: "", text: "" });
   };
 
-  const handleCloseScanner = () => {
-    setScannerActive(false);
+  // Handler per aprire scanner Mappa (singolo)
+  const handleScanMappa = () => {
+    console.log("📷 Apertura scanner Mappa (singolo)");
+    setScannerTarget("mappa");
+    setScannerActive(true);
+    setMessage({ type: "", text: "" });
   };
 
+  // Handler per ricevere i dati dallo scanner
+  const handleScanSuccess = (scannedData) => {
+    if (scannerTarget === "udm") {
+      // UDM: multiplo - scannedData è un array
+      if (Array.isArray(scannedData)) {
+        const udmList = scannedData.join("\n");
+        setUdmValue(udmList);
+        setMessage({
+          type: "success",
+          text: `${scannedData.length} codici UDM scansionati con successo!`,
+        });
+        console.log("✅ UDM scansionati:", scannedData);
+      }
+    } else if (scannerTarget === "mappa") {
+      // Mappa: singolo - scannedData è una stringa
+      setMappaValue(scannedData);
+      setMessage({
+        type: "success",
+        text: `Codice Mappa scansionato: ${scannedData}`,
+      });
+      console.log("✅ Mappa scansionata:", scannedData);
+    }
+  };
+
+  // Handler per chiusura scanner
+  const handleScannerClose = () => {
+    setScannerActive(false);
+    setScannerTarget(null);
+  };
+
+  // Handler per edit manuale UDM
+  const handleEditUdm = () => {
+    setUdmEditMode(!udmEditMode);
+    if (udmEditMode) {
+      console.log("💾 Salvataggio UDM:", udmValue);
+      setMessage({
+        type: "success",
+        text: "Valore UDM salvato",
+      });
+    }
+  };
+
+  // Handler per edit manuale Mappa
+  const handleEditMappa = () => {
+    setMappaEditMode(!mappaEditMode);
+    if (mappaEditMode) {
+      console.log("💾 Salvataggio Mappa:", mappaValue);
+      setMessage({
+        type: "success",
+        text: "Valore Mappa salvato",
+      });
+    }
+  };
+
+  // Handler per reset form
+  const handleReset = () => {
+    setUdmValue("");
+    setMappaValue("");
+    setUdmEditMode(false);
+    setMappaEditMode(false);
+    setMessage({ type: "", text: "" });
+  };
+
+  // Handler per conferma stock (placeholder)
   const handleConfermaStock = async () => {
-    // Validazione dati
-    if (!stockData.partNumber) {
-      setMessage({
-        type: "error",
-        text: "Inserire il Part Number",
-      });
-      return;
-    }
-
-    if (calcolaTotaleStock() === 0) {
-      setMessage({
-        type: "error",
-        text: "Il totale pezzi deve essere maggiore di zero",
-      });
-      return;
-    }
-
     setLoading(true);
     setMessage({ type: "", text: "" });
 
-    const requestData = {
-      metadata: {
-        tag: "stock",
-      },
-      data: {
-        procedureName: "stock_materiale",
-        jsonData: {
-          partNumber: stockData.partNumber,
-          totalePezzi: calcolaTotaleStock(),
-          numeroPezzi: parseFloat(stockData.numeroPezzi) || 0,
-          numeroColli: parseFloat(stockData.numeroColli) || 0,
-          timestamp: new Date().toISOString(),
-          userId: user.id,
-        },
-      },
-    };
+    // Separa gli UDM (divisi da \n)
+    const udmArray = udmValue.split("\n").filter(u => u.trim());
 
-    console.log("Invio dati Stock:", JSON.stringify(requestData, null, 2));
+    console.log("📦 Conferma Stock:");
+    console.log("UDM:", udmArray);
+    console.log("Mappa:", mappaValue);
 
-    const token = localStorage.getItem("directus_token");
-    console.log("Token presente:", token ? "SÃ¬" : "No");
+    // TODO: Chiamata API al backend
+    // const requestData = {
+    //   metadata: { tag: "stock" },
+    //   data: {
+    //     procedureName: "stock_materiale",
+    //     jsonData: {
+    //       udm: udmArray,
+    //       mappa: mappaValue,
+    //       timestamp: new Date().toISOString(),
+    //       userId: user.id,
+    //     },
+    //   },
+    // };
 
-    if (!token) {
+    // Simulazione chiamata API
+    setTimeout(() => {
       setMessage({
-        type: "error",
-        text: "Token di autenticazione mancante. Effettua il login reale, non Demo Login.",
+        type: "success",
+        text: `Stock confermato! ${udmArray.length} UDM associati alla mappa ${mappaValue}`,
       });
       setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(`${DIRECTUS_URL}/stored-procedures`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(requestData),
-      });
-
-      const result = await response.json();
-
-      console.log("Risposta dal backend Stock:", result);
-      if (result.data && result.data[0]) {
-        console.log("Dati dalla procedure Stock:", result.data[0]);
-        if (result.data[0].result) {
-          console.log(
-            "JSON dalla procedure Stock:",
-            JSON.parse(result.data[0].result)
-          );
-        }
-      }
-
-      if (response.ok && result.success) {
-        const procedureResult = result.data[0]?.result
-          ? JSON.parse(result.data[0].result)
-          : null;
-
-        setMessage({
-          type: procedureResult?.verificaCompletata ? "success" : "warning",
-          text:
-            procedureResult?.message ||
-            `Stock verificato! Part Number: ${
-              stockData.partNumber
-            }, Totale: ${calcolaTotaleStock()} pezzi`,
-        });
-
-        // Reset del form dopo successo
-        setStockData({
-          partNumber: "",
-          numeroPezzi: "",
-          numeroColli: "",
-        });
-      } else if (response.status === 401) {
-        setMessage({
-          type: "error",
-          text: "Sessione scaduta. Effettua nuovamente il login.",
-        });
-      } else {
-        setMessage({
-          type: "error",
-          text: result.error || "Errore durante la verifica dello stock",
-        });
-      }
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text: "Errore di connessione con il server",
-      });
-      console.error("Errore chiamata API Stock:", error);
-    } finally {
-      setLoading(false);
-    }
+      
+      // Reset dopo conferma
+      setTimeout(() => {
+        handleReset();
+      }, 2000);
+    }, 1000);
   };
 
   return (
@@ -218,7 +191,7 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
                 onClick={() => onNavigate("dashboard")}
                 className="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg"
               >
-                â†
+                ←
               </button>
               <div className="bg-blue-600 p-3 rounded-xl">
                 <Package className="h-8 w-8 text-white" />
@@ -262,151 +235,179 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
         {/* Form Stock */}
         <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
           <h2 className="text-2xl font-bold mb-6 text-gray-900">
-            Dati di Stock
+            Scansione Stock
           </h2>
 
-          {/* Bottone Scansiona QR */}
-          <div className="mb-6">
-            <button
-              onClick={handleOpenScanner}
-              disabled={loading}
-              className="w-full bg-purple-600 text-white py-3 px-6 rounded-lg hover:bg-purple-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              <QrCode className="h-5 w-5 mr-2" />
-              📷 Scansiona QR Code
-            </button>
-          </div>
-
-          {/* Valore QR scansionato */}
-          {scannedValue && (
-            <div className="mb-6 bg-purple-50 border border-purple-200 rounded-lg p-4">
-              <div className="flex items-center">
-                <QrCode className="h-5 w-5 text-purple-600 mr-2" />
-                <span className="font-bold text-purple-900">
-                  QR Scansionato:
-                </span>
-                <span className="ml-2 text-purple-700 font-mono">
-                  {scannedValue}
-                </span>
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="space-y-6">
+            {/* Campo UDM (multiplo) */}
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">
-                Part Number *
+                UDM (Unità Di Movimentazione) - Multiplo
               </label>
+              
+              {/* Campo textarea */}
+              <textarea
+                value={udmValue}
+                onChange={(e) => setUdmValue(e.target.value)}
+                readOnly={!udmEditMode}
+                rows={udmValue ? udmValue.split("\n").length : 3}
+                className={`w-full px-4 py-3 border-2 rounded-lg text-lg font-mono resize-none ${
+                  udmEditMode
+                    ? "border-blue-500 bg-white focus:ring-2 focus:ring-blue-500"
+                    : "border-gray-300 bg-gray-50 cursor-not-allowed"
+                }`}
+                placeholder="Scansiona UDM"
+                disabled={loading}
+              />
+
+              {/* Bottoni sotto il campo */}
+              <div className="flex gap-2 mt-2">
+                {/* Bottone Scanner */}
+                <button
+                  onClick={handleScanUdm}
+                  disabled={loading}
+                  className="flex-1 bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  title="Scansiona multipli QR Code UDM"
+                >
+                  <Camera className="h-5 w-5" />
+                  <span className="text-sm font-medium">Scansiona UDM</span>
+                </button>
+
+                {/* Bottone Edit */}
+                <button
+                  onClick={handleEditUdm}
+                  disabled={loading}
+                  className={`flex-1 px-4 py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+                    udmEditMode
+                      ? "bg-green-600 text-white hover:bg-green-700"
+                      : "bg-gray-600 text-white hover:bg-gray-700"
+                  }`}
+                  title={udmEditMode ? "Salva UDM" : "Modifica UDM"}
+                >
+                  <Edit className="h-5 w-5" />
+                  <span className="text-sm font-medium">{udmEditMode ? "Salva" : "Modifica"}</span>
+                </button>
+              </div>
+
+              {udmEditMode && (
+                <p className="text-xs text-blue-600 mt-1">
+                  Modalità modifica attiva - Inserisci un UDM per riga
+                </p>
+              )}
+              {udmValue && !udmEditMode && (
+                <p className="text-xs text-gray-600 mt-1">
+                  {udmValue.split("\n").filter(u => u.trim()).length} UDM inseriti
+                </p>
+              )}
+            </div>
+
+            {/* Campo Mappa (singolo) */}
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                Mappa (Posizione in magazzino) - Singolo
+              </label>
+              
+              {/* Campo input */}
               <input
                 type="text"
-                name="partNumber"
-                value={stockData.partNumber}
-                onChange={handleStockChange}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-lg"
-                placeholder="Inserisci Part Number"
+                value={mappaValue}
+                onChange={(e) => setMappaValue(e.target.value)}
+                readOnly={!mappaEditMode}
+                className={`w-full px-4 py-3 border-2 rounded-lg text-lg ${
+                  mappaEditMode
+                    ? "border-blue-500 bg-white focus:ring-2 focus:ring-blue-500"
+                    : "border-gray-300 bg-gray-50 cursor-not-allowed"
+                }`}
+                placeholder="Scansiona o inserisci Mappa"
                 disabled={loading}
               />
-            </div>
 
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                Numero Pezzi per Collo
-              </label>
-              <input
-                type="number"
-                name="numeroPezzi"
-                value={stockData.numeroPezzi}
-                onChange={handleStockChange}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-lg"
-                placeholder="0"
-                min="0"
-                disabled={loading}
-              />
-            </div>
+              {/* Bottoni sotto il campo */}
+              <div className="flex gap-2 mt-2">
+                {/* Bottone Scanner */}
+                <button
+                  onClick={handleScanMappa}
+                  disabled={loading}
+                  className="flex-1 bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  title="Scansiona QR Code Mappa"
+                >
+                  <Camera className="h-5 w-5" />
+                  <span className="text-sm font-medium">Scansiona Mappa</span>
+                </button>
 
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                Numero Colli
-              </label>
-              <input
-                type="number"
-                name="numeroColli"
-                value={stockData.numeroColli}
-                onChange={handleStockChange}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-lg"
-                placeholder="0"
-                min="0"
-                disabled={loading}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                Totale Pezzi
-              </label>
-              <div className="w-full px-4 py-3 border-2 border-blue-300 bg-blue-50 rounded-lg text-lg font-bold text-blue-800">
-                {calcolaTotaleStock()} pezzi
+                {/* Bottone Edit */}
+                <button
+                  onClick={handleEditMappa}
+                  disabled={loading}
+                  className={`flex-1 px-4 py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+                    mappaEditMode
+                      ? "bg-green-600 text-white hover:bg-green-700"
+                      : "bg-gray-600 text-white hover:bg-gray-700"
+                  }`}
+                  title={mappaEditMode ? "Salva Mappa" : "Modifica Mappa"}
+                >
+                  <Edit className="h-5 w-5" />
+                  <span className="text-sm font-medium">{mappaEditMode ? "Salva" : "Modifica"}</span>
+                </button>
               </div>
-            </div>
-          </div>
 
-          {/* Riepilogo */}
-          {stockData.partNumber &&
-            (stockData.numeroPezzi || stockData.numeroColli) && (
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <h3 className="font-bold text-gray-900 mb-2">Riepilogo:</h3>
-                <div className="text-sm text-gray-700 space-y-1">
+              {mappaEditMode && (
+                <p className="text-xs text-blue-600 mt-1">
+                  Modalità modifica attiva - Inserisci manualmente il valore
+                </p>
+              )}
+            </div>
+
+            {/* Riepilogo (se entrambi i campi sono compilati) */}
+            {udmValue && mappaValue && (
+              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <h3 className="font-bold text-blue-900 mb-2">Riepilogo:</h3>
+                <div className="text-sm text-blue-700 space-y-2">
+                  <div>
+                    <span className="font-medium">UDM scansionati:</span>
+                    <div className="bg-white rounded p-2 mt-1 font-mono text-xs max-h-32 overflow-y-auto">
+                      {udmValue.split("\n").map((udm, idx) => (
+                        udm.trim() && <div key={idx}>• {udm}</div>
+                      ))}
+                    </div>
+                    <p className="text-xs mt-1">
+                      Totale: {udmValue.split("\n").filter(u => u.trim()).length} UDM
+                    </p>
+                  </div>
                   <p>
-                    <span className="font-medium">Part Number:</span>{" "}
-                    {stockData.partNumber}
-                  </p>
-                  <p>
-                    <span className="font-medium">Pezzi per collo:</span>{" "}
-                    {stockData.numeroPezzi || 0}
-                  </p>
-                  <p>
-                    <span className="font-medium">Numero colli:</span>{" "}
-                    {stockData.numeroColli || 0}
-                  </p>
-                  <p className="text-lg font-bold text-blue-600">
-                    <span className="font-medium">Totale:</span>{" "}
-                    {calcolaTotaleStock()} pezzi
+                    <span className="font-medium">Mappa:</span> {mappaValue}
                   </p>
                 </div>
               </div>
             )}
 
-          {/* Pulsanti */}
-          <div className="flex space-x-4">
-            <button
-              onClick={handleConfermaStock}
-              disabled={loading}
-              className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? "Invio in corso..." : "Conferma Stock"}
-            </button>
-            <button
-              onClick={() =>
-                setStockData({
-                  partNumber: "",
-                  numeroPezzi: "",
-                  numeroColli: "",
-                })
-              }
-              disabled={loading}
-              className="flex-1 bg-gray-600 text-white py-3 px-6 rounded-lg hover:bg-gray-700 font-bold disabled:opacity-50"
-            >
-              Reset
-            </button>
+            {/* Pulsanti azione */}
+            <div className="flex space-x-4 pt-4">
+              <button
+                onClick={handleReset}
+                disabled={loading}
+                className="flex-1 bg-gray-600 text-white py-3 px-6 rounded-lg hover:bg-gray-700 font-bold disabled:opacity-50"
+              >
+                Reset
+              </button>
+              <button
+                onClick={handleConfermaStock}
+                disabled={loading || !udmValue || !mappaValue}
+                className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? "Invio in corso..." : "Conferma Stock"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* QR Scanner Modal */}
+      {/* Scanner Modal/Overlay */}
       {scannerActive && (
-        <QrScanner
-          onScanSuccess={handleQrScan}
-          onClose={handleCloseScanner}
+        <ScannerComponent
+          onScanSuccess={handleScanSuccess}
+          onClose={handleScannerClose}
+          scanMode={scannerTarget === "udm" ? "multiple" : "single"}
         />
       )}
     </div>
