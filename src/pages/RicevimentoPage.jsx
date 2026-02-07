@@ -221,7 +221,7 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
           // Download automatico del PDF
           console.log(`📥 Scaricando PDF con ${printResult.udm_count} UDM...`);
           const pdf = printResult.pdfs[0];
-          downloadPdf(pdf.pdf_base64, `Etichette_UDM_${printResult.udm_count}_pezzi.pdf`);
+          await downloadPdf(pdf.pdf_base64, `Etichette_UDM_${printResult.udm_count}_pezzi.pdf`);
 
           setMessage({
             type: "success",

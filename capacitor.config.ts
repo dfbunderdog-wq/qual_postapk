@@ -7,6 +7,11 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https'
   }
+  "plugins": {
+    "Filesystem": {
+      "AndroidPublicDirectory": "DOWNLOADS"
+    }
+  }
 };
 
 export default config;
