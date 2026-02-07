@@ -1,12 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import LoginPage from "./pages/LoginPage";
 import Dashboard from "./pages/Dashboard";
 import RicevimentoPage from "./pages/RicevimentoPage";
 import StockPage from "./pages/StockPage";
+import { initSounds } from "./utils/soundEffects";
 
 const App = () => {
   const [currentPage, setCurrentPage] = useState("login");
   const [user, setUser] = useState(null);
+
+  // Inizializza suoni all'avvio dell'app
+  useEffect(() => {
+    initSounds();
+  }, []);
 
   const handleLogin = (userData) => {
     setUser(userData);

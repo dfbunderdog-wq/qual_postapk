@@ -1,12 +1,26 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { X } from "lucide-react";
+import { playScannerFeedback, playDuplicateFeedback } from "../utils/soundEffects";
 
 const QrScannerWeb = ({ onScanSuccess, onClose, scanMode = "single" }) => {
   const html5QrCodeRef = useRef(null);
   const [scannedCodes, setScannedCodes] = useState([]);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState(null);
+  
+  // Ref per tracciare i codici scansionati (evita problema di closure)
+  const scannedCodesRef = useRef([]);
+  
+  // Debounce per evitare letture ripetute dello stesso codice
+  const lastScannedCode = useRef(null);
+  const lastScannedTime = useRef(0);
+  
+  // Flag per bloccare letture multiple in modalità single
+  const isProcessing = useRef(false);
+  
+  // Cooldown tra scansioni in modalità multipla (ms)
+  const COOLDOWN_MS = 500; // 500ms = mezzo secondo tra una scansione e l'altra
 
   useEffect(() => {
     startScanner();
@@ -32,22 +46,62 @@ const QrScannerWeb = ({ onScanSuccess, onClose, scanMode = "single" }) => {
 
       // Callback successo scansione
       const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-        console.log("✅ QR scansionato:", decodedText);
+        const now = Date.now();
+        
+        console.log("📷 QR rilevato:", decodedText);
 
         if (scanMode === "single") {
-          // Modalità singola: chiudi subito
+          // Modalità singola (Mappa)
+          
+          // Se sta già processando, BLOCCA tutto
+          if (isProcessing.current) {
+            console.log("🚫 Già in elaborazione, ignorato");
+            return;
+          }
+          
+          // Imposta flag immediatamente
+          isProcessing.current = true;
+          
+          console.log("✅ QR Mappa accettato:", decodedText);
+          playScannerFeedback();
           onScanSuccess(decodedText);
           stopScanner();
           onClose();
+          
         } else {
-          // Modalità multipla: aggiungi alla lista (ignora duplicati)
-          setScannedCodes((prev) => {
-            if (prev.includes(decodedText)) {
-              console.log("⚠️ QR duplicato ignorato:", decodedText);
-              return prev;
-            }
-            return [...prev, decodedText];
-          });
+          // Modalità multipla (UDM)
+          
+          // Cooldown: blocca tutte le scansioni se sono passati meno di COOLDOWN_MS dall'ultima
+          if (now - lastScannedTime.current < COOLDOWN_MS) {
+            console.log(`⏱️ Cooldown attivo, attendi ${COOLDOWN_MS}ms tra le scansioni`);
+            return;
+          }
+          
+          // Controlla se è già nella lista usando il Ref (aggiornato in tempo reale)
+          if (scannedCodesRef.current.includes(decodedText)) {
+            console.log("⚠️ QR duplicato (già nella lista) - ignorato");
+            return; // NESSUN SUONO, non aggiungere
+          }
+          
+																			  
+																							   
+																		  
+				   
+		   
+		  
+          // Codice NUOVO!
+          console.log("✅ QR nuovo, aggiunto:", decodedText);
+          lastScannedCode.current = decodedText;
+          lastScannedTime.current = now; // Aggiorna timestamp per cooldown
+          
+          // Aggiungi al ref (sincrono)
+          scannedCodesRef.current = [...scannedCodesRef.current, decodedText];
+          
+          // Aggiungi allo state (per UI)
+          setScannedCodes(scannedCodesRef.current);
+          
+          // Suono DOPO aver aggiunto
+          playScannerFeedback();
         }
       };
 
