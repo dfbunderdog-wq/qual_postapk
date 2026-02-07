@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { X } from "lucide-react";
-import { playScannerFeedback, playDuplicateFeedback } from "../utils/soundEffects";
+import { playScannerFeedback, warmupAudio } from "../utils/soundEffects";
 
 const QrScannerWeb = ({ onScanSuccess, onClose, scanMode = "single" }) => {
   const html5QrCodeRef = useRef(null);
@@ -23,6 +23,9 @@ const QrScannerWeb = ({ onScanSuccess, onClose, scanMode = "single" }) => {
   const COOLDOWN_MS = 500; // 500ms = mezzo secondo tra una scansione e l'altra
 
   useEffect(() => {
+    // Warmup audio immediatamente all'apertura dello scanner
+    warmupAudio();
+    
     startScanner();
 
     // Cleanup al unmount
@@ -71,28 +74,24 @@ const QrScannerWeb = ({ onScanSuccess, onClose, scanMode = "single" }) => {
         } else {
           // Modalità multipla (UDM)
           
-          // Cooldown: blocca tutte le scansioni se sono passati meno di COOLDOWN_MS dall'ultima
-          if (now - lastScannedTime.current < COOLDOWN_MS) {
-            console.log(`⏱️ Cooldown attivo, attendi ${COOLDOWN_MS}ms tra le scansioni`);
-            return;
-          }
-          
           // Controlla se è già nella lista usando il Ref (aggiornato in tempo reale)
           if (scannedCodesRef.current.includes(decodedText)) {
             console.log("⚠️ QR duplicato (già nella lista) - ignorato");
+            // I duplicati non consumano cooldown né aggiornano timestamp
             return; // NESSUN SUONO, non aggiungere
           }
           
-																			  
-																							   
-																		  
-				   
-		   
-		  
-          // Codice NUOVO!
+          // Cooldown: blocca SOLO se è lo STESSO codice letto di recente
+          // Questo evita riletture multiple dello stesso QR, ma permette QR diversi subito dopo
+          if (decodedText === lastScannedCode.current && now - lastScannedTime.current < COOLDOWN_MS) {
+            console.log(`⏭️ Stesso codice "${decodedText}" ignorato (cooldown ${COOLDOWN_MS}ms)`);
+            return;
+          }
+          
+          // Codice NUOVO (diverso e non in lista)!
           console.log("✅ QR nuovo, aggiunto:", decodedText);
           lastScannedCode.current = decodedText;
-          lastScannedTime.current = now; // Aggiorna timestamp per cooldown
+          lastScannedTime.current = now; // Aggiorna timestamp
           
           // Aggiungi al ref (sincrono)
           scannedCodesRef.current = [...scannedCodesRef.current, decodedText];

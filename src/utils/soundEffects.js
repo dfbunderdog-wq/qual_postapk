@@ -9,6 +9,36 @@ import { Capacitor } from '@capacitor/core';
 // Flag per verificare se i suoni sono stati precaricati
 let soundsInitialized = false;
 
+// Flag per verificare se l'AudioContext è stato "warmato"
+let audioContextWarmed = false;
+
+/**
+ * Pre-warm dell'audio context per evitare blocchi browser
+ * Chiamare al primo tap/interazione utente
+ */
+export const warmupAudio = async () => {
+  if (audioContextWarmed) return;
+  
+  try {
+    // Crea e avvia un AudioContext silenzioso per "svegliare" l'audio del browser
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    gainNode.gain.value = 0; // Volume a zero (silenzioso)
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.001);
+    
+    audioContextWarmed = true;
+    console.log("✅ Audio context warmed up");
+  } catch (error) {
+    console.error("Errore warmup audio:", error);
+  }
+};
+
 /**
  * Inizializza e precarica i suoni
  * Chiamare questa funzione all'avvio dell'app (una sola volta)
@@ -18,6 +48,9 @@ export const initSounds = async () => {
     console.log("🔊 Suoni già inizializzati");
     return;
   }
+
+  // Warmup audio context
+  await warmupAudio();
 
   try {
     // Precarica suono scanner
@@ -37,6 +70,7 @@ export const initSounds = async () => {
 
 /**
  * Suono scanner - Beep quando QR code viene letto con successo
+ * Con fallback immediato per garantire riproduzione al 100%
  */
 export const playScannerBeep = async () => {
   try {
@@ -45,16 +79,28 @@ export const playScannerBeep = async () => {
       await initSounds();
     }
 
-    // Riproduci suono
+    // Warmup se necessario
+    if (!audioContextWarmed) {
+      await warmupAudio();
+    }
+
+    // Tentativo di riproduzione con NativeAudio
     await NativeAudio.play({
       assetId: 'scanner-beep'
     });
 
-    console.log("🔊 Suono scanner riprodotto");
+    console.log("🔊 Suono scanner riprodotto (NativeAudio)");
   } catch (error) {
-    console.error("❌ Errore riproduzione suono:", error);
+    console.warn("⚠️ NativeAudio fallito, uso fallback:", error.message);
     
-    // Fallback: suono sintetizzato se NativeAudio fallisce
+    // Se NativeAudio fallisce, potrebbe essere un problema di stato
+    // Reset flag per tentare reinizializzazione al prossimo giro
+    if (error.message && error.message.includes('not found')) {
+      soundsInitialized = false;
+      console.log("🔄 Reset stato suoni per reinizializzazione");
+    }
+    
+    // Fallback IMMEDIATO a suono sintetizzato (sempre funziona)
     playFallbackBeep();
   }
 };
@@ -105,6 +151,11 @@ export const vibrate = (duration = 50) => {
  * Feedback completo - Suono + Vibrazione
  */
 export const playScannerFeedback = async () => {
+  // Warmup se necessario (importante al primo utilizzo)
+  if (!audioContextWarmed) {
+    await warmupAudio();
+  }
+  
   await playScannerBeep();
   vibrate(30);
 };
@@ -117,31 +168,43 @@ export const playDuplicateFeedback = async () => {
   vibrate(100);
 };
 
+// AudioContext condiviso per fallback (evita problemi di creazione multipla)
+let fallbackAudioContext = null;
+
 /**
  * Fallback - Suono sintetizzato se NativeAudio non è disponibile
+ * Usa AudioContext condiviso per evitare problemi
  */
 const playFallbackBeep = () => {
   try {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = audioContext.createOscillator();
-    const gain = audioContext.createGain();
+    // Crea AudioContext solo una volta
+    if (!fallbackAudioContext) {
+      fallbackAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    
+    const ctx = fallbackAudioContext;
+    const now = ctx.currentTime;
+    
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
     
     osc.connect(gain);
-    gain.connect(audioContext.destination);
+    gain.connect(ctx.destination);
     
+    // Beep scanner realistico
     osc.frequency.value = 2200;
     osc.type = 'square';
     
-    gain.gain.setValueAtTime(0, audioContext.currentTime);
-    gain.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.005);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.4, now + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
     
-    osc.start(audioContext.currentTime);
-    osc.stop(audioContext.currentTime + 0.05);
+    osc.start(now);
+    osc.stop(now + 0.05);
     
     console.log("🔊 Fallback beep riprodotto");
   } catch (error) {
-    console.error("Errore fallback beep:", error);
+    console.error("❌ Errore critico fallback beep:", error);
   }
 };
 
