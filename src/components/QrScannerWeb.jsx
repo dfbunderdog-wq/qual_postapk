@@ -1,82 +1,98 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { Html5Qrcode } from "html5-qrcode";
 import { X } from "lucide-react";
 
 const QrScannerWeb = ({ onScanSuccess, onClose, scanMode = "single" }) => {
-  const scannerRef = useRef(null);
+  const html5QrCodeRef = useRef(null);
   const [scannedCodes, setScannedCodes] = useState([]);
-  const [isScanning, setIsScanning] = useState(true);
+  const [isScanning, setIsScanning] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Configurazione scanner
-    const config = {
-      fps: 10,
-      qrbox: { width: 250, height: 250 },
-      aspectRatio: 1.0,
-      videoConstraints: {
-        facingMode: { ideal: "environment" } // Camera posteriore
-      }
-    };
-
-    // Inizializza scanner
-    const scanner = new Html5QrcodeScanner("qr-reader", config, false);
-    scannerRef.current = scanner;
-
-    // Callback successo
-    const handleSuccess = (decodedText) => {
-      console.log("✅ QR scansionato:", decodedText);
-      
-      if (scanMode === "single") {
-        // Modalità singola: chiudi subito
-        onScanSuccess(decodedText);
-        scanner.clear().catch(error => {
-          console.error("Errore cleanup scanner:", error);
-        });
-        onClose();
-      } else {
-        // Modalità multipla: aggiungi alla lista (ignora duplicati)
-        setScannedCodes(prev => {
-          if (prev.includes(decodedText)) {
-            console.log("⚠️ QR duplicato ignorato:", decodedText);
-            return prev;
-          }
-          return [...prev, decodedText];
-        });
-      }
-    };
-
-    // Callback errore (non mostrare errori continui)
-    const handleError = (error) => {
-      if (!error.includes("NotFoundException")) {
-        console.warn("Scanner error:", error);
-      }
-    };
-
-    // Avvia scanner
-    scanner.render(handleSuccess, handleError);
+    startScanner();
 
     // Cleanup al unmount
     return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear().catch(error => {
-          console.error("Errore cleanup scanner al unmount:", error);
-        });
-      }
+      stopScanner();
     };
-  }, [scanMode]);
+  }, []);
 
-  // Handler per stop scansione (solo modalità multipla)
-  const handleStopScan = () => {
-    setIsScanning(false);
-    
-    if (scannerRef.current) {
-      scannerRef.current.clear().catch(error => {
-        console.error("Errore cleanup scanner:", error);
-      });
+  const startScanner = async () => {
+    try {
+      // Inizializza Html5Qrcode
+      const html5QrCode = new Html5Qrcode("qr-reader");
+      html5QrCodeRef.current = html5QrCode;
+
+      // Configurazione camera
+      const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
+      };
+
+      // Callback successo scansione
+      const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+        console.log("✅ QR scansionato:", decodedText);
+
+        if (scanMode === "single") {
+          // Modalità singola: chiudi subito
+          onScanSuccess(decodedText);
+          stopScanner();
+          onClose();
+        } else {
+          // Modalità multipla: aggiungi alla lista (ignora duplicati)
+          setScannedCodes((prev) => {
+            if (prev.includes(decodedText)) {
+              console.log("⚠️ QR duplicato ignorato:", decodedText);
+              return prev;
+            }
+            return [...prev, decodedText];
+          });
+        }
+      };
+
+      // Avvia scanner con camera posteriore
+      await html5QrCode.start(
+        { facingMode: "environment" }, // Forza camera posteriore
+        config,
+        qrCodeSuccessCallback,
+        (errorMessage) => {
+          // Ignora errori continui di "not found"
+          if (!errorMessage.includes("NotFoundException")) {
+            console.warn("Scanner error:", errorMessage);
+          }
+        }
+      );
+
+      setIsScanning(true);
+      setError(null);
+    } catch (err) {
+      console.error("Errore avvio scanner:", err);
+      setError("Impossibile accedere alla camera. Controlla i permessi.");
     }
-    
+  };
+
+  const stopScanner = async () => {
+    if (html5QrCodeRef.current && isScanning) {
+      try {
+        await html5QrCodeRef.current.stop();
+        html5QrCodeRef.current.clear();
+        setIsScanning(false);
+      } catch (err) {
+        console.error("Errore stop scanner:", err);
+      }
+    }
+  };
+
+  const handleStopScan = async () => {
+    await stopScanner();
     // Passa tutti i codici scansionati al parent
     onScanSuccess(scannedCodes);
+    onClose();
+  };
+
+  const handleClose = async () => {
+    await stopScanner();
     onClose();
   };
 
@@ -85,12 +101,7 @@ const QrScannerWeb = ({ onScanSuccess, onClose, scanMode = "single" }) => {
       <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 relative">
         {/* Bottone Chiudi */}
         <button
-          onClick={() => {
-            if (scannerRef.current) {
-              scannerRef.current.clear().catch(console.error);
-            }
-            onClose();
-          }}
+          onClick={handleClose}
           className="absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 rounded-full p-2 transition-colors z-10"
         >
           <X className="h-5 w-5 text-gray-600" />
@@ -113,6 +124,13 @@ const QrScannerWeb = ({ onScanSuccess, onClose, scanMode = "single" }) => {
           )}
         </div>
 
+        {/* Errore */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+            <p className="text-sm text-red-800">{error}</p>
+          </div>
+        )}
+
         {/* Lista codici scansionati (solo modalità multipla) */}
         {scanMode === "multiple" && scannedCodes.length > 0 && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 max-h-40 overflow-y-auto">
@@ -121,7 +139,10 @@ const QrScannerWeb = ({ onScanSuccess, onClose, scanMode = "single" }) => {
             </h3>
             <ul className="space-y-1">
               {scannedCodes.map((code, index) => (
-                <li key={index} className="text-sm text-green-700 flex items-center">
+                <li
+                  key={index}
+                  className="text-sm text-green-700 flex items-center"
+                >
                   <span className="mr-2">•</span>
                   <span className="font-mono">{code}</span>
                 </li>
