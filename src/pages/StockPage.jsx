@@ -8,10 +8,8 @@ import {
   Camera,
   Edit,
 } from "lucide-react";
-import { Capacitor } from '@capacitor/core';
 import { DIRECTUS_URL } from "../utils/constants";
 import QrScannerWeb from "../components/QrScannerWeb";
-import QrScannerNative from "../components/QrScannerNative";
 
 const StockPage = ({ user, onLogout, onNavigate }) => {
   // State per i campi
@@ -29,11 +27,6 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
   // State per UI
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
-
-  // Determina quale componente scanner usare
-  const ScannerComponent = Capacitor.isNativePlatform() 
-    ? QrScannerNative 
-    : QrScannerWeb;
 
   // Handler per aprire scanner UDM (multiplo)
   const handleScanUdm = () => {
@@ -402,9 +395,9 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
         </div>
       </div>
 
-      {/* Scanner Modal/Overlay */}
+      {/* Scanner Modal */}
       {scannerActive && (
-        <ScannerComponent
+        <QrScannerWeb
           onScanSuccess={handleScanSuccess}
           onClose={handleScannerClose}
           scanMode={scannerTarget === "udm" ? "multiple" : "single"}
