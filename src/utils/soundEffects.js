@@ -53,7 +53,19 @@ export const initSounds = async () => {
   await warmupAudio();
 
   try {
-    // Precarica suono scanner
+    // Precarica suono scanner (stesso path per web e mobile)
+																								 
+												   
+																							
+																						
+																   
+												   
+																  
+														 
+  
+												 
+															 
+  
     await NativeAudio.preload({
       assetId: 'scanner-beep',
       assetPath: 'scanner-beep.mp3',
@@ -222,3 +234,4 @@ export const cleanupSounds = async () => {
     console.error("Errore cleanup suoni:", error);
   }
 };
+
