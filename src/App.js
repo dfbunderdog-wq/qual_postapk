@@ -3,6 +3,7 @@ import LoginPage from "./pages/LoginPage";
 import Dashboard from "./pages/Dashboard";
 import RicevimentoPage from "./pages/RicevimentoPage";
 import StockPage from "./pages/StockPage";
+import UscitaPage from "./pages/UscitaPage";
 import { initSounds } from "./utils/soundEffects";
 
 const App = () => {
@@ -58,6 +59,16 @@ const App = () => {
   if (currentPage === "stock" && user) {
     return (
       <StockPage
+        user={user}
+        onLogout={handleLogout}
+        onNavigate={navigateTo}
+      />
+    );
+  }
+
+  if (currentPage === "uscita" && user) {
+    return (
+      <UscitaPage
         user={user}
         onLogout={handleLogout}
         onNavigate={navigateTo}

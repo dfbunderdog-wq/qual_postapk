@@ -95,14 +95,17 @@ const Dashboard = ({ user, onLogout, onNavigate }) => {
             </button>
           </div>
 
-          {/* Card Uscita (placeholder) */}
+          {/* Card Uscita */}
           <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
             <div className="bg-red-100 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
               <Package className="h-6 w-6 text-red-600" />
             </div>
             <h3 className="text-xl font-bold mb-3">Uscita Materiale</h3>
-            <p className="text-gray-600 mb-4">Gestisci uscite materiale</p>
-            <button className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 font-semibold">
+            <p className="text-gray-600 mb-4">Visualizza UDM in magazzino</p>
+            <button
+              onClick={() => onNavigate("uscita")}
+              className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 font-semibold"
+            >
               Uscita Materiale
             </button>
           </div>
