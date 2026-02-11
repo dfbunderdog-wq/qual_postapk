@@ -7,15 +7,21 @@ import {
   CheckCircle,
   RefreshCw,
   Search,
+  Camera,
 } from "lucide-react";
 import { DIRECTUS_URL } from "../utils/constants";
+import QrScannerWeb from "../components/QrScannerWeb";
 
 const UscitaPage = ({ user, onLogout, onNavigate }) => {
   const [udmList, setUdmList] = useState([]);
   const [filteredList, setFilteredList] = useState([]);
+  const [selectedUdm, setSelectedUdm] = useState([]); // Array di ID selezionati
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // State per scanner
+  const [scannerActive, setScannerActive] = useState(false);
 
   // Carica UDM all'avvio
   useEffect(() => {
@@ -27,13 +33,26 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
     if (searchTerm === "") {
       setFilteredList(udmList);
     } else {
-      const filtered = udmList.filter((udm) =>
-        udm.cod_udm.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        udm.stato?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        udm.idudm.toString().includes(searchTerm)
-      );
-      setFilteredList(filtered);
+      // Splitta per ";" e rimuovi spazi vuoti
+      const searchTerms = searchTerm
+        .split(";")
+        .map((term) => term.trim())
+        .filter((term) => term.length > 0);
+
+      if (searchTerms.length === 0) {
+        setFilteredList(udmList);
+      } else {
+        // Filtra UDM che matchano QUALSIASI dei termini cercati
+        const filtered = udmList.filter((udm) =>
+          searchTerms.some((term) =>
+            udm.cod_udm.toLowerCase().includes(term.toLowerCase())
+          )
+        );
+        setFilteredList(filtered);
+      }
     }
+    // Reset selezione quando cambia la ricerca
+    setSelectedUdm([]);
   }, [searchTerm, udmList]);
 
   const handleCaricaUdm = async () => {
@@ -84,6 +103,7 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
         if (procedureResult && procedureResult.udm_list) {
           setUdmList(procedureResult.udm_list);
           setFilteredList(procedureResult.udm_list);
+          setSelectedUdm([]); // Reset selezione quando si ricaricano i dati
           setMessage({
             type: "success",
             text: `Caricati ${procedureResult.udm_count} UDM`,
@@ -119,6 +139,63 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleString("it-IT");
+  };
+
+  // Gestione selezione singola
+  const handleSelectUdm = (idudm) => {
+    setSelectedUdm((prev) => {
+      if (prev.includes(idudm)) {
+        // Se già selezionato, rimuovi
+        return prev.filter((id) => id !== idudm);
+      } else {
+        // Altrimenti aggiungi
+        return [...prev, idudm];
+      }
+    });
+  };
+
+  // Gestione selezione tutti
+  const handleSelectAll = () => {
+    if (selectedUdm.length === filteredList.length) {
+      // Se tutti selezionati, deseleziona tutti
+      setSelectedUdm([]);
+    } else {
+      // Altrimenti seleziona tutti quelli visibili
+      setSelectedUdm(filteredList.map((udm) => udm.idudm));
+    }
+  };
+
+  // Verifica se tutti sono selezionati
+  const isAllSelected = filteredList.length > 0 && selectedUdm.length === filteredList.length;
+  
+  // Verifica se alcuni sono selezionati (per stato indeterminato)
+  const isSomeSelected = selectedUdm.length > 0 && selectedUdm.length < filteredList.length;
+
+  // Handler per aprire scanner multiplo
+  const handleOpenScanner = () => {
+    console.log("📷 Apertura scanner multiplo per filtro UDM");
+    setScannerActive(true);
+    setMessage({ type: "", text: "" });
+  };
+
+  // Handler per ricevere i dati dallo scanner
+  const handleScanSuccess = (scannedData) => {
+    if (Array.isArray(scannedData) && scannedData.length > 0) {
+      // Concatena i codici con ";"
+      const concatenatedCodes = scannedData.join(";");
+      setSearchTerm(concatenatedCodes);
+      
+      setMessage({
+        type: "success",
+        text: `${scannedData.length} codici UDM scansionati e aggiunti al filtro!`,
+      });
+      console.log("✅ UDM scansionati per filtro:", scannedData);
+    }
+  };
+
+  // Handler per chiusura scanner
+  const handleScannerClose = () => {
+    setScannerActive(false);
   };
 
   return (
@@ -198,9 +275,20 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
           </div>
         )}
 
-        {/* Toolbar: Ricerca e Ricarica */}
+        {/* Toolbar: Scanner, Ricerca e Ricarica */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
           <div className="flex gap-4 items-center">
+            {/* Bottone Scanner */}
+            <button
+              onClick={handleOpenScanner}
+              disabled={loading}
+              className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+              title="Scansiona multipli QR Code UDM"
+            >
+              <Camera className="h-5 w-5" />
+              <span className="hidden sm:inline">Scansiona UDM</span>
+            </button>
+
             {/* Campo ricerca */}
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -209,30 +297,62 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                placeholder="Cerca per Codice UDM, Stato, ID..."
+                placeholder="Cerca per Codice UDM (usa ; per cercare più UDM)..."
               />
+              {/* Badge numero termini di ricerca */}
+              {searchTerm && searchTerm.includes(";") && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    {searchTerm.split(";").filter((t) => t.trim()).length} UDM cercati
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Bottone Ricarica */}
             <button
               onClick={handleCaricaUdm}
               disabled={loading}
-              className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
             >
               <RefreshCw className={`h-5 w-5 ${loading ? "animate-spin" : ""}`} />
-              {loading ? "Caricamento..." : "Ricarica"}
+              <span className="hidden sm:inline">{loading ? "Caricamento..." : "Ricarica"}</span>
             </button>
           </div>
 
           {/* Contatore risultati */}
-          <div className="mt-3 text-sm text-gray-600">
-            {filteredList.length > 0 ? (
-              <span>
-                Visualizzati <strong>{filteredList.length}</strong> di{" "}
-                <strong>{udmList.length}</strong> UDM totali
-              </span>
-            ) : (
-              <span>Nessun risultato</span>
+          <div className="mt-3 text-sm text-gray-600 flex items-center justify-between">
+            <div className="space-y-1">
+              {filteredList.length > 0 ? (
+                <span>
+                  Visualizzati <strong>{filteredList.length}</strong> di{" "}
+                  <strong>{udmList.length}</strong> UDM totali
+                </span>
+              ) : (
+                <span>Nessun risultato</span>
+              )}
+              
+              {/* Suggerimento ricerca multipla */}
+              {searchTerm && searchTerm.includes(";") && (
+                <div className="text-xs text-blue-600">
+                  💡 Ricerca multipla attiva: {searchTerm.split(";").filter((t) => t.trim()).length} codici UDM
+                </div>
+              )}
+            </div>
+            
+            {/* Indicatore selezione */}
+            {selectedUdm.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-red-600">
+                  {selectedUdm.length} UDM selezionati
+                </span>
+                <button
+                  onClick={() => setSelectedUdm([])}
+                  className="text-xs text-gray-500 hover:text-gray-700 underline"
+                >
+                  Deseleziona tutti
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -243,6 +363,18 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
             <table className="w-full">
               <thead className="bg-gray-50 border-b-2 border-gray-200">
                 <tr>
+                  <th className="px-6 py-4 text-left">
+                    <input
+                      type="checkbox"
+                      checked={isAllSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = isSomeSelected;
+                      }}
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500 cursor-pointer"
+                      title={isAllSelected ? "Deseleziona tutti" : "Seleziona tutti"}
+                    />
+                  </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                     ID
                   </th>
@@ -268,8 +400,18 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
                   filteredList.map((udm) => (
                     <tr
                       key={udm.idudm}
-                      className="hover:bg-gray-50 transition-colors"
+                      className={`hover:bg-gray-50 transition-colors ${
+                        selectedUdm.includes(udm.idudm) ? "bg-red-50" : ""
+                      }`}
                     >
+                      <td className="px-6 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedUdm.includes(udm.idudm)}
+                          onChange={() => handleSelectUdm(udm.idudm)}
+                          className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500 cursor-pointer"
+                        />
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {udm.idudm}
                       </td>
@@ -305,7 +447,7 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
                 ) : (
                   <tr>
                     <td
-                      colSpan="6"
+                      colSpan="7"
                       className="px-6 py-12 text-center text-gray-500"
                     >
                       {loading
@@ -328,6 +470,15 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
           </p>
         </div>
       </div>
+
+      {/* Scanner Modal */}
+      {scannerActive && (
+        <QrScannerWeb
+          onScanSuccess={handleScanSuccess}
+          onClose={handleScannerClose}
+          scanMode="multiple"
+        />
+      )}
     </div>
   );
 };
