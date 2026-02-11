@@ -107,10 +107,10 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
           const procedureResult = JSON.parse(result.data[0].result);
           console.log("JSON dalla procedure:", procedureResult);
 
-          // Salva il transaction_id se presente
-          if (procedureResult.transaction_id) {
-            setLastTransactionId(procedureResult.transaction_id);
-            console.log("Transaction ID salvato:", procedureResult.transaction_id);
+          // Salva il idtrn se presente
+          if (procedureResult.idtrn) {
+            setLastTransactionId(procedureResult.idtrn);
+            console.log("Transaction ID salvato:", procedureResult.idtrn);
           }
         }
       }
@@ -176,7 +176,7 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
       },
       data: {
         jsonData: {
-          transaction_id: lastTransactionId,
+          idtrn: lastTransactionId,
           userId: user.id,
           timestamp: new Date().toISOString(),
         },
