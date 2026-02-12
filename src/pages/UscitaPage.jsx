@@ -393,6 +393,9 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                     ID User
                   </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Id Shipment
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -442,6 +445,9 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
                       <td className="px-6 py-4 text-sm text-gray-500 font-mono">
                         {udm.iduser ? udm.iduser.substring(0, 8) + "..." : "N/A"}
                       </td>
+	              <td className="px-6 py-4 text-sm text-gray-500 font-mono">
+                        {udm.idship ? udm.idship.substring(0, 8) + "..." : "N/A"}
+                      </td>
                     </tr>
                   ))
                 ) : (
@@ -484,3 +490,4 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
 };
 
 export default UscitaPage;
+
