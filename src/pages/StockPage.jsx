@@ -107,8 +107,29 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
     setMessage({ type: "", text: "" });
   };
 
-  // Handler per conferma stock (placeholder)
+  // Handler per conferma stock
   const handleConfermaStock = async () => {
+    console.log("🔵 Inizio handleConfermaStock");
+    
+    // Validazione input
+    if (!udmValue || udmValue.trim() === "") {
+      setMessage({
+        type: "error",
+        text: "Inserire almeno un UDM",
+      });
+      return;
+    }
+
+    if (!mappaValue || mappaValue.trim() === "") {
+      setMessage({
+        type: "error",
+        text: "Inserire il codice Mappa",
+      });
+      return;
+    }
+
+    console.log("🟢 Validazione OK");
+
     setLoading(true);
     setMessage({ type: "", text: "" });
 
@@ -119,33 +140,112 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
     console.log("UDM:", udmArray);
     console.log("Mappa:", mappaValue);
 
-    // TODO: Chiamata API al backend
-    // const requestData = {
-    //   metadata: { tag: "stock" },
-    //   data: {
-    //     procedureName: "stock_materiale",
-    //     jsonData: {
-    //       udm: udmArray,
-    //       mappa: mappaValue,
-    //       timestamp: new Date().toISOString(),
-    //       userId: user.id,
-    //     },
-    //   },
-    // };
+    const requestData = {
+      metadata: {
+        tag: "stock",
+      },
+      data: {
+        procedureName: "update_udm_location",
+        jsonData: {
+          udm: udmArray,
+          cod_loc: mappaValue,
+          timestamp: new Date().toISOString(),
+          userId: user.id,
+        },
+      },
+    };
 
-    // Simulazione chiamata API
-    setTimeout(() => {
+    console.log("🟡 Request Data:", JSON.stringify(requestData, null, 2));
+
+    const token = localStorage.getItem("directus_token");
+    console.log("🔑 Token presente:", token ? "SI" : "NO");
+
+    if (!token) {
+      console.log("❌ Token mancante!");
       setMessage({
-        type: "success",
-        text: `Stock confermato! ${udmArray.length} UDM associati alla mappa ${mappaValue}`,
+        type: "error",
+        text: "Token di autenticazione mancante. Effettua il login reale, non Demo Login.",
       });
       setLoading(false);
-      
-      // Reset dopo conferma
-      setTimeout(() => {
-        handleReset();
-      }, 2000);
-    }, 1000);
+      return;
+    }
+
+    console.log("🚀 Invio richiesta API...");
+
+    try {
+      const response = await fetch(`${DIRECTUS_URL}/stored-procedures`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      console.log("📨 Risposta ricevuta, status:", response.status);
+
+      const result = await response.json();
+
+      console.log("📋 Risposta dal backend:", result);
+
+      if (response.ok && result.success) {
+        const procedureResult = result.data[0]?.result
+          ? JSON.parse(result.data[0].result)
+          : null;
+
+        console.log("✅ Procedure result:", procedureResult);
+
+        if (procedureResult) {
+          if (procedureResult.status === "success") {
+            // Tutti gli UDM aggiornati con successo
+            setMessage({
+              type: "success",
+              text: procedureResult.message,
+            });
+            
+            // Reset form dopo successo
+            setTimeout(() => {
+              handleReset();
+            }, 2000);
+          } else {
+            // Errore o UDM non trovati
+            let errorText = procedureResult.message;
+            
+            // Se ci sono UDM non trovati, mostrali
+            if (procedureResult.udm_not_found_list && procedureResult.udm_not_found_list.length > 0) {
+              const notFoundList = procedureResult.udm_not_found_list.join(", ");
+              errorText += `\nUDM non trovati: ${notFoundList}`;
+            }
+            
+            setMessage({
+              type: "error",
+              text: errorText,
+            });
+          }
+        }
+      } else if (response.status === 401) {
+        console.log("🔐 Sessione scaduta");
+        setMessage({
+          type: "error",
+          text: "Sessione scaduta. Effettua nuovamente il login.",
+        });
+      } else {
+        console.log("❌ Errore response:", result);
+        setMessage({
+          type: "error",
+          text: result.error || "Errore durante la conferma dello stock",
+        });
+      }
+    } catch (error) {
+      console.error("💥 Errore chiamata API:", error);
+      setMessage({
+        type: "error",
+        text: "Errore di connessione con il server",
+      });
+    } finally {
+      console.log("🏁 Fine handleConfermaStock");
+      setLoading(false);
+    }
   };
 
   return (
