@@ -20,6 +20,7 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
   const [message, setMessage] = useState({ type: "", text: "" });
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [statoFilter, setStatoFilter] = useState(null); // null = tutti, altrimenti nome stato
   
   // State per scanner
   const [scannerActive, setScannerActive] = useState(false);
@@ -29,36 +30,51 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
     handleCaricaUdm();
   }, []);
 
-  // Filtra lista quando cambia searchTerm
+  // Filtra lista quando cambia searchTerm o statoFilter
   useEffect(() => {
-    if (searchTerm === "") {
-      setFilteredList(udmList);
-    } else {
-      // Splitta per ";" e rimuovi spazi vuoti
+    let filtered = udmList;
+    
+    // Filtro per codice UDM (ricerca multipla con ";")
+    if (searchTerm !== "") {
       const searchTerms = searchTerm
         .split(";")
         .map((term) => term.trim())
         .filter((term) => term.length > 0);
 
-      if (searchTerms.length === 0) {
-        setFilteredList(udmList);
-      } else {
-        // Filtra UDM che matchano QUALSIASI dei termini cercati
-        const filtered = udmList.filter((udm) =>
+      if (searchTerms.length > 0) {
+        filtered = filtered.filter((udm) =>
           searchTerms.some((term) =>
             udm.cod_udm.toLowerCase().includes(term.toLowerCase())
           )
         );
-        setFilteredList(filtered);
       }
     }
-    // Reset selezione quando cambia la ricerca
+    
+    // Filtro per stato
+    if (statoFilter !== null) {
+      filtered = filtered.filter((udm) => udm.stato === statoFilter);
+    }
+    
+    setFilteredList(filtered);
+    
+    // Reset selezione quando cambia il filtro
     setSelectedUdm([]);
-  }, [searchTerm, udmList]);
+  }, [searchTerm, statoFilter, udmList]);
 
   const handleCaricaUdm = async () => {
     setLoading(true);
     setMessage({ type: "", text: "" });
+
+														 
+								  
+							  
+						   
+				  
+							
+   
+	  
+														   
+   
 
     const requestData = {
       metadata: {
@@ -135,6 +151,17 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Estrae tutti gli stati unici presenti nella lista UDM
+  const getAvailableStati = () => {
+    const statiSet = new Set();
+    udmList.forEach(udm => {
+      if (udm.stato) {
+        statiSet.add(udm.stato);
+      }
+    });
+    return Array.from(statiSet).sort(); // Ordine alfabetico
   };
 
   const formatDate = (dateString) => {
@@ -313,46 +340,46 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
   };
   
   // Handler per ordinamento colonne
-	const handleSort = (key) => {
-	  let direction = 'asc';
-	  
-	  // Se clicco sulla stessa colonna, inverto la direzione
-	  if (sortConfig.key === key && sortConfig.direction === 'asc') {
-		direction = 'desc';
-	  }
-	  
-	  setSortConfig({ key, direction });
-	  
-	  // Ordina filteredList
-	  const sorted = [...filteredList].sort((a, b) => {
-		// Gestisci valori null/undefined
-		const aVal = a[key] ?? '';
-		const bVal = b[key] ?? '';
-		
-		// Confronto numerico per ID
-		if (key === 'idudm' || key === 'idship') {
-		  return direction === 'asc' ? aVal - bVal : bVal - aVal;
-		}
-		
-		// Confronto stringa per altri campi
-		const aStr = String(aVal).toLowerCase();
-		const bStr = String(bVal).toLowerCase();
-		
-		if (aStr < bStr) return direction === 'asc' ? -1 : 1;
-		if (aStr > bStr) return direction === 'asc' ? 1 : -1;
-		return 0;
-	  });
-	  
-	  setFilteredList(sorted);
-	};
+  const handleSort = (key) => {
+    let direction = 'asc';
+    
+    // Se clicco sulla stessa colonna, inverto la direzione
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    
+    setSortConfig({ key, direction });
+    
+    // Ordina filteredList
+    const sorted = [...filteredList].sort((a, b) => {
+      // Gestisci valori null/undefined
+      const aVal = a[key] ?? '';
+      const bVal = b[key] ?? '';
+      
+      // Confronto numerico per ID
+      if (key === 'idudm' || key === 'idship') {
+        return direction === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      
+      // Confronto stringa per altri campi
+      const aStr = String(aVal).toLowerCase();
+      const bStr = String(bVal).toLowerCase();
+      
+      if (aStr < bStr) return direction === 'asc' ? -1 : 1;
+      if (aStr > bStr) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    
+    setFilteredList(sorted);
+  };
 
-	// Helper per mostrare icona ordinamento
-	const getSortIcon = (columnKey) => {
-	  if (sortConfig.key !== columnKey) {
-		return '⇅'; // Icona neutra
-	  }
-	  return sortConfig.direction === 'asc' ? '↑' : '↓';
-	};
+  // Helper per mostrare icona ordinamento
+  const getSortIcon = (columnKey) => {
+    if (sortConfig.key !== columnKey) {
+      return '⇅'; // Icona neutra
+    }
+    return sortConfig.direction === 'asc' ? '↑' : '↓';
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -474,42 +501,92 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
               <RefreshCw className={`h-5 w-5 ${loading ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline">{loading ? "Caricamento..." : "Ricarica"}</span>
             </button>
-		  
-			{/* Bottone Crea Spedizione */}
-			<button
-			  onClick={handleCreaSpedizione}
-			  disabled={
-				  loading || 
-				  selectedUdm.length === 0 || 
-				  filteredList.some(udm => 
-					selectedUdm.includes(udm.idudm) && 
-					udm.idship != null  // ← Cambiato: usa != invece di !==
-				  )
-				}
-			  className="bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
-			  title={
-				filteredList.some(udm => selectedUdm.includes(udm.idudm) && udm.idship !== null)
-				  ? "Impossibile: uno o più UDM selezionati hanno già un ID spedizione"
-				  : "Crea una nuova spedizione con gli UDM selezionati"
-			  }
-			>
-			  <Package className="h-5 w-5" />
-			  <span className="hidden sm:inline">
-				Crea Spedizione {selectedUdm.length > 0 && `(${selectedUdm.length})`}
-			  </span>
-			</button>
+          
+            {/* Bottone Crea Spedizione */}
+            <button
+              onClick={handleCreaSpedizione}
+              disabled={
+                loading || 
+                selectedUdm.length === 0 || 
+                filteredList.some(udm => 
+                  selectedUdm.includes(udm.idudm) && 
+                  udm.idship != null
+                )
+              }
+              className="bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+              title={
+                filteredList.some(udm => selectedUdm.includes(udm.idudm) && udm.idship !== null)
+                  ? "Impossibile: uno o più UDM selezionati hanno già un ID spedizione"
+                  : "Crea una nuova spedizione con gli UDM selezionati"
+              }
+            >
+              <Package className="h-5 w-5" />
+              <span className="hidden sm:inline">
+                Crea Spedizione {selectedUdm.length > 0 && `(${selectedUdm.length})`}
+              </span>
+            </button>
           </div>
-		  
-		  {/* Avviso UDM già spediti */}
-			{selectedUdm.length > 0 && 
-			 filteredList.some(udm => selectedUdm.includes(udm.idudm) && udm.idship !== null) && (
-			  <div className="mt-2 text-sm text-orange-600 flex items-center gap-2">
-				<AlertCircle className="h-4 w-4" />
-				<span>
-				  Attenzione: Alcuni UDM selezionati hanno già un ID spedizione assegnato
-				</span>
-			  </div>
-			)}
+          
+          {/* Filtri Stato - Riga sotto la toolbar */}
+          {udmList.length > 0 && (
+            <div className="flex gap-2 items-center flex-wrap mt-3">
+              <span className="text-sm font-semibold text-gray-700">Filtra per stato:</span>
+              
+              {/* Bottone "Tutti" */}
+              <button
+                onClick={() => setStatoFilter(null)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  statoFilter === null
+                    ? "bg-gray-700 text-white"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                }`}
+              >
+                Tutti ({udmList.length})
+              </button>
+              
+              {/* Bottoni dinamici per ogni stato */}
+              {getAvailableStati().map((stato) => {
+                const count = udmList.filter(udm => udm.stato === stato).length;
+                const isActive = statoFilter === stato;
+                
+                // Colori badge basati sullo stato
+                let colorClass = "bg-gray-200 text-gray-700 hover:bg-gray-300";
+                if (isActive) {
+                  if (stato === "CREATO") colorClass = "bg-green-600 text-white";
+                  else if (stato === "IN_TRANSITO") colorClass = "bg-blue-600 text-white";
+                  else if (stato === "STOCCATO") colorClass = "bg-purple-600 text-white";
+                  else if (stato === "SPEDITO") colorClass = "bg-orange-600 text-white";
+                  else colorClass = "bg-gray-700 text-white";
+                } else {
+                  if (stato === "CREATO") colorClass = "bg-green-100 text-green-700 hover:bg-green-200";
+                  else if (stato === "IN_TRANSITO") colorClass = "bg-blue-100 text-blue-700 hover:bg-blue-200";
+                  else if (stato === "STOCCATO") colorClass = "bg-purple-100 text-purple-700 hover:bg-purple-200";
+                  else if (stato === "SPEDITO") colorClass = "bg-orange-100 text-orange-700 hover:bg-orange-200";
+                }
+                
+                return (
+                  <button
+                    key={stato}
+                    onClick={() => setStatoFilter(stato)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${colorClass}`}
+                  >
+                    {stato} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          
+          {/* Avviso UDM già spediti */}
+          {selectedUdm.length > 0 && 
+           filteredList.some(udm => selectedUdm.includes(udm.idudm) && udm.idship !== null) && (
+            <div className="mt-2 text-sm text-orange-600 flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              <span>
+                Attenzione: Alcuni UDM selezionati hanno già un ID spedizione assegnato
+              </span>
+            </div>
+          )}
 
           {/* Contatore risultati */}
           <div className="mt-3 text-sm text-gray-600 flex items-center justify-between">
@@ -518,6 +595,7 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
                 <span>
                   Visualizzati <strong>{filteredList.length}</strong> di{" "}
                   <strong>{udmList.length}</strong> UDM totali
+                  {statoFilter && <span className="text-red-600"> (filtrati per: <strong>{statoFilter}</strong>)</span>}
                 </span>
               ) : (
                 <span>Nessun risultato</span>
@@ -553,78 +631,78 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b-2 border-gray-200">
-				  <tr>
-					<th className="px-6 py-4 text-left">
-					  <input
-						type="checkbox"
-						checked={isAllSelected}
-						ref={(el) => {
-						  if (el) el.indeterminate = isSomeSelected;
-						}}
-						onChange={handleSelectAll}
-						className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500 cursor-pointer"
-						title={isAllSelected ? "Deseleziona tutti" : "Seleziona tutti"}
-					  />
-					</th>
-					
-					{/* Colonne cliccabili per ordinamento */}
-					<th 
-					  onClick={() => handleSort('idudm')}
-					  className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
-					  title="Clicca per ordinare"
-					>
-					  ID {getSortIcon('idudm')}
-					</th>
-					
-					<th 
-					  onClick={() => handleSort('cod_udm')}
-					  className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
-					  title="Clicca per ordinare"
-					>
-					  Codice UDM {getSortIcon('cod_udm')}
-					</th>
-					
-					<th 
-					  onClick={() => handleSort('stato')}
-					  className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
-					  title="Clicca per ordinare"
-					>
-					  Stato {getSortIcon('stato')}
-					</th>
-					
-					<th 
-					  onClick={() => handleSort('data_ins')}
-					  className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
-					  title="Clicca per ordinare"
-					>
-					  Data Inserimento {getSortIcon('data_ins')}
-					</th>
-					
-					<th 
-					  onClick={() => handleSort('idtrn')}
-					  className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
-					  title="Clicca per ordinare"
-					>
-					  ID Transazione {getSortIcon('idtrn')}
-					</th>
-					
-					<th 
-					  onClick={() => handleSort('iduser')}
-					  className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
-					  title="Clicca per ordinare"
-					>
-					  ID User {getSortIcon('iduser')}
-					</th>
-					
-					<th 
-					  onClick={() => handleSort('idship')}
-					  className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
-					  title="Clicca per ordinare"
-					>
-					  Id Shipment {getSortIcon('idship')}
-					</th>
-				  </tr>
-				</thead>
+                <tr>
+                  <th className="px-6 py-4 text-left">
+                    <input
+                      type="checkbox"
+                      checked={isAllSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = isSomeSelected;
+                      }}
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500 cursor-pointer"
+                      title={isAllSelected ? "Deseleziona tutti" : "Seleziona tutti"}
+                    />
+                  </th>
+                  
+                  {/* Colonne cliccabili per ordinamento */}
+                  <th 
+                    onClick={() => handleSort('idudm')}
+                    className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                    title="Clicca per ordinare"
+                  >
+                    ID {getSortIcon('idudm')}
+                  </th>
+                  
+                  <th 
+                    onClick={() => handleSort('cod_udm')}
+                    className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                    title="Clicca per ordinare"
+                  >
+                    Codice UDM {getSortIcon('cod_udm')}
+                  </th>
+                  
+                  <th 
+                    onClick={() => handleSort('stato')}
+                    className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                    title="Clicca per ordinare"
+                  >
+                    Stato {getSortIcon('stato')}
+                  </th>
+                  
+                  <th 
+                    onClick={() => handleSort('data_ins')}
+                    className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                    title="Clicca per ordinare"
+                  >
+                    Data Inserimento {getSortIcon('data_ins')}
+                  </th>
+                  
+                  <th 
+                    onClick={() => handleSort('idtrn')}
+                    className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                    title="Clicca per ordinare"
+                  >
+                    ID Transazione {getSortIcon('idtrn')}
+                  </th>
+                  
+                  <th 
+                    onClick={() => handleSort('iduser')}
+                    className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                    title="Clicca per ordinare"
+                  >
+                    ID User {getSortIcon('iduser')}
+                  </th>
+                  
+                  <th 
+                    onClick={() => handleSort('idship')}
+                    className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                    title="Clicca per ordinare"
+                  >
+                    Id Shipment {getSortIcon('idship')}
+                  </th>
+                </tr>
+              </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredList.length > 0 ? (
                   filteredList.map((udm) => (
@@ -672,21 +750,21 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
                       <td className="px-6 py-4 text-sm text-gray-500 font-mono">
                         {udm.iduser ? udm.iduser.substring(0, 8) + "..." : "N/A"}
                       </td>
-	              <td className="px-6 py-4 text-sm text-gray-500 font-mono">
-                        {udm.idship ? udm.idship.substring(0, 8) + "..." : "N/A"}
+                      <td className="px-6 py-4 text-sm text-gray-500 font-mono">
+                        {udm.idship ? udm.idship : "N/A"}
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
                     <td
-                      colSpan="7"
+                      colSpan="8"
                       className="px-6 py-12 text-center text-gray-500"
                     >
                       {loading
                         ? "Caricamento in corso..."
-                        : searchTerm
-                        ? "Nessun risultato trovato per la ricerca"
+                        : searchTerm || statoFilter
+                        ? "Nessun risultato trovato per i filtri applicati"
                         : "Nessun UDM trovato. Carica i dati."}
                     </td>
                   </tr>
