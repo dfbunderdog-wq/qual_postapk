@@ -1,0 +1,55 @@
+{
+  "title": "Stock Materiale",
+  "subtitle": "Verifica e gestisci lo stock in magazzino",
+  
+  "fields": {
+    "udm": {
+      "label": "UDM (Unità Di Movimentazione) - Multiplo",
+      "placeholder": "Scansiona UDM",
+      "editMode": "Modalità modifica attiva - Inserisci un UDM per riga",
+      "count": "{{count}} UDM inseriti"
+    },
+    "mappa": {
+      "label": "Mappa (Posizione in magazzino) - Singolo",
+      "placeholder": "Scansiona o inserisci Mappa",
+      "editMode": "Modalità modifica attiva - Inserisci manualmente il valore"
+    }
+  },
+  
+  "buttons": {
+    "scanUdm": "Scansiona UDM",
+    "scanMappa": "Scansiona Mappa",
+    "edit": "Modifica",
+    "save": "Salva",
+    "reset": "Reset",
+    "confirm": "Conferma Stock",
+    "confirming": "Invio in corso..."
+  },
+  
+  "summary": {
+    "title": "Riepilogo:",
+    "udmScanned": "UDM scansionati:",
+    "total": "Totale: {{count}} UDM",
+    "mappa": "Mappa:"
+  },
+  
+  "messages": {
+    "udmRequired": "Inserire almeno un UDM",
+    "mappaRequired": "Inserire il codice Mappa",
+    "udmSaved": "Valore UDM salvato",
+    "mappaSaved": "Valore Mappa salvato",
+    "success": "{{message}}",
+    "error": "Errore durante la conferma dello stock"
+  },
+  
+  "scanner": {
+    "udm": {
+      "title": "Scansione Multipla",
+      "success": "{{count}} codici UDM scansionati con successo!"
+    },
+    "mappa": {
+      "title": "Scansiona QR Code",
+      "success": "Codice Mappa scansionato: {{code}}"
+    }
+  }
+}

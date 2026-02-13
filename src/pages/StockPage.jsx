@@ -8,10 +8,14 @@ import {
   Camera,
   Edit,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { DIRECTUS_URL } from "../utils/constants";
 import QrScannerWeb from "../components/QrScannerWeb";
+import LanguageSelector from "../components/LanguageSelector";
 
 const StockPage = ({ user, onLogout, onNavigate }) => {
+  const { t } = useTranslation(['stock', 'common']);
+  
   // State per i campi
   const [udmValue, setUdmValue] = useState("");
   const [mappaValue, setMappaValue] = useState("");
@@ -53,7 +57,7 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
         setUdmValue(udmList);
         setMessage({
           type: "success",
-          text: `${scannedData.length} codici UDM scansionati con successo!`,
+          text: t('stock:scanner.udm.success', { count: scannedData.length }),
         });
         console.log("✅ UDM scansionati:", scannedData);
       }
@@ -62,7 +66,7 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
       setMappaValue(scannedData);
       setMessage({
         type: "success",
-        text: `Codice Mappa scansionato: ${scannedData}`,
+        text: t('stock:scanner.mappa.success', { code: scannedData }),
       });
       console.log("✅ Mappa scansionata:", scannedData);
     }
@@ -81,7 +85,7 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
       console.log("💾 Salvataggio UDM:", udmValue);
       setMessage({
         type: "success",
-        text: "Valore UDM salvato",
+        text: t('stock:messages.udmSaved'),
       });
     }
   };
@@ -93,7 +97,7 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
       console.log("💾 Salvataggio Mappa:", mappaValue);
       setMessage({
         type: "success",
-        text: "Valore Mappa salvato",
+        text: t('stock:messages.mappaSaved'),
       });
     }
   };
@@ -115,7 +119,7 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
     if (!udmValue || udmValue.trim() === "") {
       setMessage({
         type: "error",
-        text: "Inserire almeno un UDM",
+        text: t('stock:messages.udmRequired'),
       });
       return;
     }
@@ -123,7 +127,7 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
     if (!mappaValue || mappaValue.trim() === "") {
       setMessage({
         type: "error",
-        text: "Inserire il codice Mappa",
+        text: t('stock:messages.mappaRequired'),
       });
       return;
     }
@@ -150,7 +154,7 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
           udm: udmArray,
           cod_loc: mappaValue,
           timestamp: new Date().toISOString(),
-          userId: user.id,
+          userId: user?.id || "demo-user",
         },
       },
     };
@@ -164,7 +168,7 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
       console.log("❌ Token mancante!");
       setMessage({
         type: "error",
-        text: "Token di autenticazione mancante. Effettua il login reale, non Demo Login.",
+        text: t('common:messages.tokenMissing'),
       });
       setLoading(false);
       return;
@@ -200,7 +204,7 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
             // Tutti gli UDM aggiornati con successo
             setMessage({
               type: "success",
-              text: procedureResult.message,
+              text: t('stock:messages.success', { message: procedureResult.message }),
             });
             
             // Reset form dopo successo
@@ -227,20 +231,20 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
         console.log("🔐 Sessione scaduta");
         setMessage({
           type: "error",
-          text: "Sessione scaduta. Effettua nuovamente il login.",
+          text: t('common:messages.sessionExpired'),
         });
       } else {
         console.log("❌ Errore response:", result);
         setMessage({
           type: "error",
-          text: result.error || "Errore durante la conferma dello stock",
+          text: result.error || t('stock:messages.error'),
         });
       }
     } catch (error) {
       console.error("💥 Errore chiamata API:", error);
       setMessage({
         type: "error",
-        text: "Errore di connessione con il server",
+        text: t('common:messages.connectionError'),
       });
     } finally {
       console.log("🏁 Fine handleConfermaStock");
@@ -266,13 +270,18 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
                 <span className="text-gray-600">{user.email}</span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-gray-500">ID:</span>
+                <span className="text-gray-500">{t('common:user.id')}:</span>
                 <span className="text-gray-600">{user.id}</span>
               </div>
             </div>
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              {user.status}
-            </span>
+            
+            {/* Language Selector + Status */}
+            <div className="flex items-center gap-4">
+              <LanguageSelector />
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                {user.status}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -291,10 +300,10 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
-                  Stock Materiale
+                  {t('stock:title')}
                 </h1>
                 <p className="text-gray-600">
-                  Verifica e gestisci lo stock in magazzino
+                  {t('stock:subtitle')}
                 </p>
               </div>
             </div>
@@ -302,7 +311,7 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
               onClick={onLogout}
               className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700"
             >
-              Logout
+              {t('common:actions.logout')}
             </button>
           </div>
         </div>
@@ -328,14 +337,14 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
         {/* Form Stock */}
         <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
           <h2 className="text-2xl font-bold mb-6 text-gray-900">
-            Scansione Stock
+            {t('stock:title')}
           </h2>
 
           <div className="space-y-6">
             {/* Campo UDM (multiplo) */}
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">
-                UDM (Unità Di Movimentazione) - Multiplo
+                {t('stock:fields.udm.label')}
               </label>
               
               {/* Campo textarea */}
@@ -349,7 +358,7 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
                     ? "border-blue-500 bg-white focus:ring-2 focus:ring-blue-500"
                     : "border-gray-300 bg-gray-50 cursor-not-allowed"
                 }`}
-                placeholder="Scansiona UDM"
+                placeholder={t('stock:fields.udm.placeholder')}
                 disabled={loading}
               />
 
@@ -360,10 +369,9 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
                   onClick={handleScanUdm}
                   disabled={loading}
                   className="flex-1 bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  title="Scansiona multipli QR Code UDM"
                 >
                   <Camera className="h-5 w-5" />
-                  <span className="text-sm font-medium">Scansiona UDM</span>
+                  <span className="text-sm font-medium">{t('stock:buttons.scanUdm')}</span>
                 </button>
 
                 {/* Bottone Edit */}
@@ -375,21 +383,24 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
                       ? "bg-green-600 text-white hover:bg-green-700"
                       : "bg-gray-600 text-white hover:bg-gray-700"
                   }`}
-                  title={udmEditMode ? "Salva UDM" : "Modifica UDM"}
                 >
                   <Edit className="h-5 w-5" />
-                  <span className="text-sm font-medium">{udmEditMode ? "Salva" : "Modifica"}</span>
+                  <span className="text-sm font-medium">
+                    {udmEditMode ? t('stock:buttons.save') : t('stock:buttons.edit')}
+                  </span>
                 </button>
               </div>
 
               {udmEditMode && (
                 <p className="text-xs text-blue-600 mt-1">
-                  Modalità modifica attiva - Inserisci un UDM per riga
+                  {t('stock:fields.udm.editMode')}
                 </p>
               )}
               {udmValue && !udmEditMode && (
                 <p className="text-xs text-gray-600 mt-1">
-                  {udmValue.split("\n").filter(u => u.trim()).length} UDM inseriti
+                  {t('stock:fields.udm.count', { 
+                    count: udmValue.split("\n").filter(u => u.trim()).length 
+                  })}
                 </p>
               )}
             </div>
@@ -397,7 +408,7 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
             {/* Campo Mappa (singolo) */}
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">
-                Mappa (Posizione in magazzino) - Singolo
+                {t('stock:fields.mappa.label')}
               </label>
               
               {/* Campo input */}
@@ -411,7 +422,7 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
                     ? "border-blue-500 bg-white focus:ring-2 focus:ring-blue-500"
                     : "border-gray-300 bg-gray-50 cursor-not-allowed"
                 }`}
-                placeholder="Scansiona o inserisci Mappa"
+                placeholder={t('stock:fields.mappa.placeholder')}
                 disabled={loading}
               />
 
@@ -422,10 +433,9 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
                   onClick={handleScanMappa}
                   disabled={loading}
                   className="flex-1 bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  title="Scansiona QR Code Mappa"
                 >
                   <Camera className="h-5 w-5" />
-                  <span className="text-sm font-medium">Scansiona Mappa</span>
+                  <span className="text-sm font-medium">{t('stock:buttons.scanMappa')}</span>
                 </button>
 
                 {/* Bottone Edit */}
@@ -437,16 +447,17 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
                       ? "bg-green-600 text-white hover:bg-green-700"
                       : "bg-gray-600 text-white hover:bg-gray-700"
                   }`}
-                  title={mappaEditMode ? "Salva Mappa" : "Modifica Mappa"}
                 >
                   <Edit className="h-5 w-5" />
-                  <span className="text-sm font-medium">{mappaEditMode ? "Salva" : "Modifica"}</span>
+                  <span className="text-sm font-medium">
+                    {mappaEditMode ? t('stock:buttons.save') : t('stock:buttons.edit')}
+                  </span>
                 </button>
               </div>
 
               {mappaEditMode && (
                 <p className="text-xs text-blue-600 mt-1">
-                  Modalità modifica attiva - Inserisci manualmente il valore
+                  {t('stock:fields.mappa.editMode')}
                 </p>
               )}
             </div>
@@ -454,21 +465,23 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
             {/* Riepilogo (se entrambi i campi sono compilati) */}
             {udmValue && mappaValue && (
               <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                <h3 className="font-bold text-blue-900 mb-2">Riepilogo:</h3>
+                <h3 className="font-bold text-blue-900 mb-2">{t('stock:summary.title')}</h3>
                 <div className="text-sm text-blue-700 space-y-2">
                   <div>
-                    <span className="font-medium">UDM scansionati:</span>
+                    <span className="font-medium">{t('stock:summary.udmScanned')}</span>
                     <div className="bg-white rounded p-2 mt-1 font-mono text-xs max-h-32 overflow-y-auto">
                       {udmValue.split("\n").map((udm, idx) => (
                         udm.trim() && <div key={idx}>• {udm}</div>
                       ))}
                     </div>
                     <p className="text-xs mt-1">
-                      Totale: {udmValue.split("\n").filter(u => u.trim()).length} UDM
+                      {t('stock:summary.total', { 
+                        count: udmValue.split("\n").filter(u => u.trim()).length 
+                      })}
                     </p>
                   </div>
                   <p>
-                    <span className="font-medium">Mappa:</span> {mappaValue}
+                    <span className="font-medium">{t('stock:summary.mappa')}</span> {mappaValue}
                   </p>
                 </div>
               </div>
@@ -481,14 +494,14 @@ const StockPage = ({ user, onLogout, onNavigate }) => {
                 disabled={loading}
                 className="flex-1 bg-gray-600 text-white py-3 px-6 rounded-lg hover:bg-gray-700 font-bold disabled:opacity-50"
               >
-                Reset
+                {t('common:actions.reset')}
               </button>
               <button
                 onClick={handleConfermaStock}
                 disabled={loading || !udmValue || !mappaValue}
                 className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? "Invio in corso..." : "Conferma Stock"}
+                {loading ? t('stock:buttons.confirming') : t('stock:buttons.confirm')}
               </button>
             </div>
           </div>

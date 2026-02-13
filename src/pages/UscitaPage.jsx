@@ -9,10 +9,14 @@ import {
   Search,
   Camera,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { DIRECTUS_URL } from "../utils/constants";
 import QrScannerWeb from "../components/QrScannerWeb";
+import LanguageSelector from "../components/LanguageSelector";
 
 const UscitaPage = ({ user, onLogout, onNavigate }) => {
+  const { t } = useTranslation(['uscita', 'common']);
+  
   const [udmList, setUdmList] = useState([]);
   const [filteredList, setFilteredList] = useState([]);
   const [selectedUdm, setSelectedUdm] = useState([]); // Array di ID selezionati
@@ -65,17 +69,6 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
     setLoading(true);
     setMessage({ type: "", text: "" });
 
-														 
-								  
-							  
-						   
-				  
-							
-   
-	  
-														   
-   
-
     const requestData = {
       metadata: {
         tag: "uscita",
@@ -94,7 +87,7 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
     if (!token) {
       setMessage({
         type: "error",
-        text: "Token di autenticazione mancante. Effettua il login.",
+        text: t('common:messages.tokenMissing'),
       });
       setLoading(false);
       return;
@@ -123,29 +116,31 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
           setSelectedUdm([]); // Reset selezione quando si ricaricano i dati
           setMessage({
             type: "success",
-            text: `Caricati ${procedureResult.udm_count} UDM`,
+            text: t('uscita:messages.loaded', { count: procedureResult.udm_count }),
           });
         } else {
           setMessage({
             type: "warning",
-            text: "Nessun UDM trovato",
+            text: t('uscita:messages.noUdmFound'),
           });
         }
       } else if (response.status === 401) {
         setMessage({
           type: "error",
-          text: "Sessione scaduta. Effettua nuovamente il login.",
+          text: t('common:messages.sessionExpired'),
         });
       } else {
         setMessage({
           type: "error",
-          text: result.error || "Errore durante il caricamento degli UDM",
+          text: result.error || t('uscita:messages.loadError', { 
+            defaultValue: "Errore durante il caricamento degli UDM" 
+          }),
         });
       }
     } catch (error) {
       setMessage({
         type: "error",
-        text: "Errore di connessione con il server",
+        text: t('common:messages.connectionError'),
       });
       console.error("Errore chiamata API:", error);
     } finally {
@@ -199,7 +194,7 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
     if (selectedUdm.length === 0) {
       setMessage({
         type: "error",
-        text: "Seleziona almeno un UDM per creare la spedizione",
+        text: t('uscita:warnings.selectAtLeastOne'),
       });
       return;
     }
@@ -230,7 +225,7 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
     if (!token) {
       setMessage({
         type: "error",
-        text: "Token di autenticazione mancante. Effettua il login reale, non Demo Login.",
+        text: t('common:messages.tokenMissing'),
       });
       setLoading(false);
       return;
@@ -260,7 +255,7 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
             // Spedizione creata con successo
             setMessage({
               type: "success",
-              text: `✅ ${procedureResult.message}`,
+              text: t('uscita:messages.shipmentCreated', { message: procedureResult.message }),
             });
 
             // Reset selezione e ricarica dati
@@ -287,18 +282,18 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
       } else if (response.status === 401) {
         setMessage({
           type: "error",
-          text: "Sessione scaduta. Effettua nuovamente il login.",
+          text: t('common:messages.sessionExpired'),
         });
       } else {
         setMessage({
           type: "error",
-          text: result.error || "Errore durante la creazione della spedizione",
+          text: result.error || t('uscita:messages.shipmentError'),
         });
       }
     } catch (error) {
       setMessage({
         type: "error",
-        text: "Errore di connessione con il server",
+        text: t('common:messages.connectionError'),
       });
       console.error("Errore chiamata API:", error);
     } finally {
@@ -328,7 +323,7 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
       
       setMessage({
         type: "success",
-        text: `${scannedData.length} codici UDM scansionati e aggiunti al filtro!`,
+        text: t('uscita:scanner.scannedSuccess', { count: scannedData.length }),
       });
       console.log("✅ UDM scansionati per filtro:", scannedData);
     }
@@ -399,13 +394,18 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
                 <span className="text-gray-600">{user.email}</span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-gray-500">ID:</span>
+                <span className="text-gray-500">{t('common:user.id')}:</span>
                 <span className="text-gray-600">{user.id}</span>
               </div>
             </div>
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              {user.status}
-            </span>
+            
+            {/* Language Selector + Status */}
+            <div className="flex items-center gap-4">
+              <LanguageSelector />
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                {user.status}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -424,16 +424,16 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
-                  Uscita Materiale
+                  {t('uscita:title')}
                 </h1>
-                <p className="text-gray-600">Visualizza tutti gli UDM in magazzino</p>
+                <p className="text-gray-600">{t('uscita:subtitle')}</p>
               </div>
             </div>
             <button
               onClick={onLogout}
               className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700"
             >
-              Logout
+              {t('common:actions.logout')}
             </button>
           </div>
         </div>
@@ -466,10 +466,9 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
               onClick={handleOpenScanner}
               disabled={loading}
               className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
-              title="Scansiona multipli QR Code UDM"
             >
               <Camera className="h-5 w-5" />
-              <span className="hidden sm:inline">Scansiona UDM</span>
+              <span className="hidden sm:inline">{t('uscita:buttons.scan')}</span>
             </button>
 
             {/* Campo ricerca */}
@@ -480,13 +479,15 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                placeholder="Cerca per Codice UDM (usa ; per cercare più UDM)..."
+                placeholder={t('uscita:search.placeholder')}
               />
               {/* Badge numero termini di ricerca */}
               {searchTerm && searchTerm.includes(";") && (
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                    {searchTerm.split(";").filter((t) => t.trim()).length} UDM cercati
+                    {t('uscita:search.multipleSearchHint', { 
+                      count: searchTerm.split(";").filter((t) => t.trim()).length 
+                    })}
                   </span>
                 </div>
               )}
@@ -499,7 +500,9 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
               className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
             >
               <RefreshCw className={`h-5 w-5 ${loading ? "animate-spin" : ""}`} />
-              <span className="hidden sm:inline">{loading ? "Caricamento..." : "Ricarica"}</span>
+              <span className="hidden sm:inline">
+                {loading ? t('uscita:buttons.reloading') : t('uscita:buttons.reload')}
+              </span>
             </button>
           
             {/* Bottone Crea Spedizione */}
@@ -516,13 +519,13 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
               className="bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
               title={
                 filteredList.some(udm => selectedUdm.includes(udm.idudm) && udm.idship !== null)
-                  ? "Impossibile: uno o più UDM selezionati hanno già un ID spedizione"
-                  : "Crea una nuova spedizione con gli UDM selezionati"
+                  ? t('uscita:messages.cannotCreateShipment')
+                  : t('uscita:buttons.createShipment')
               }
             >
               <Package className="h-5 w-5" />
               <span className="hidden sm:inline">
-                Crea Spedizione {selectedUdm.length > 0 && `(${selectedUdm.length})`}
+                {t('uscita:buttons.createShipment')} {selectedUdm.length > 0 && `(${selectedUdm.length})`}
               </span>
             </button>
           </div>
@@ -530,7 +533,7 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
           {/* Filtri Stato - Riga sotto la toolbar */}
           {udmList.length > 0 && (
             <div className="flex gap-2 items-center flex-wrap mt-3">
-              <span className="text-sm font-semibold text-gray-700">Filtra per stato:</span>
+              <span className="text-sm font-semibold text-gray-700">{t('uscita:filters.filterByStatus')}</span>
               
               {/* Bottone "Tutti" */}
               <button
@@ -541,7 +544,7 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
                     : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                 }`}
               >
-                Tutti ({udmList.length})
+                {t('uscita:filters.all')} ({udmList.length})
               </button>
               
               {/* Bottoni dinamici per ogni stato */}
@@ -582,9 +585,7 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
            filteredList.some(udm => selectedUdm.includes(udm.idudm) && udm.idship !== null) && (
             <div className="mt-2 text-sm text-orange-600 flex items-center gap-2">
               <AlertCircle className="h-4 w-4" />
-              <span>
-                Attenzione: Alcuni UDM selezionati hanno già un ID spedizione assegnato
-              </span>
+              <span>{t('uscita:warnings.someAlreadyShipped')}</span>
             </div>
           )}
 
@@ -592,20 +593,20 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
           <div className="mt-3 text-sm text-gray-600 flex items-center justify-between">
             <div className="space-y-1">
               {filteredList.length > 0 ? (
-                <span>
-                  Visualizzati <strong>{filteredList.length}</strong> di{" "}
-                  <strong>{udmList.length}</strong> UDM totali
-                  {statoFilter && <span className="text-red-600"> (filtrati per: <strong>{statoFilter}</strong>)</span>}
-                </span>
+                <div dangerouslySetInnerHTML={{
+                  __html: t('uscita:results.showing', { 
+                    filtered: filteredList.length,
+                    total: udmList.length
+                  })
+                }} />
               ) : (
-                <span>Nessun risultato</span>
+                <span>{t('uscita:results.noResults')}</span>
               )}
               
-              {/* Suggerimento ricerca multipla */}
-              {searchTerm && searchTerm.includes(";") && (
-                <div className="text-xs text-blue-600">
-                  💡 Ricerca multipla attiva: {searchTerm.split(";").filter((t) => t.trim()).length} codici UDM
-                </div>
+              {statoFilter && (
+                <div className="text-xs text-red-600" dangerouslySetInnerHTML={{
+                  __html: t('uscita:results.filteredBy', { filter: statoFilter })
+                }} />
               )}
             </div>
             
@@ -613,13 +614,13 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
             {selectedUdm.length > 0 && (
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-red-600">
-                  {selectedUdm.length} UDM selezionati
+                  {t('uscita:results.selected', { count: selectedUdm.length })}
                 </span>
                 <button
                   onClick={() => setSelectedUdm([])}
                   className="text-xs text-gray-500 hover:text-gray-700 underline"
                 >
-                  Deseleziona tutti
+                  {t('uscita:buttons.deselectAll')}
                 </button>
               </div>
             )}
@@ -641,7 +642,7 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
                       }}
                       onChange={handleSelectAll}
                       className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500 cursor-pointer"
-                      title={isAllSelected ? "Deseleziona tutti" : "Seleziona tutti"}
+                      title={isAllSelected ? t('uscita:buttons.deselectAll') : t('uscita:filters.all')}
                     />
                   </th>
                   
@@ -649,57 +650,50 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
                   <th 
                     onClick={() => handleSort('idudm')}
                     className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
-                    title="Clicca per ordinare"
                   >
-                    ID {getSortIcon('idudm')}
+                    {t('uscita:table.id')} {getSortIcon('idudm')}
                   </th>
                   
                   <th 
                     onClick={() => handleSort('cod_udm')}
                     className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
-                    title="Clicca per ordinare"
                   >
-                    Codice UDM {getSortIcon('cod_udm')}
+                    {t('uscita:table.code')} {getSortIcon('cod_udm')}
                   </th>
                   
                   <th 
                     onClick={() => handleSort('stato')}
                     className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
-                    title="Clicca per ordinare"
                   >
-                    Stato {getSortIcon('stato')}
+                    {t('uscita:table.status')} {getSortIcon('stato')}
                   </th>
                   
                   <th 
                     onClick={() => handleSort('data_ins')}
                     className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
-                    title="Clicca per ordinare"
                   >
-                    Data Inserimento {getSortIcon('data_ins')}
+                    {t('uscita:table.insertDate')} {getSortIcon('data_ins')}
                   </th>
                   
                   <th 
                     onClick={() => handleSort('idtrn')}
                     className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
-                    title="Clicca per ordinare"
                   >
-                    ID Transazione {getSortIcon('idtrn')}
+                    {t('uscita:table.transactionId')} {getSortIcon('idtrn')}
                   </th>
                   
                   <th 
                     onClick={() => handleSort('iduser')}
                     className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
-                    title="Clicca per ordinare"
                   >
-                    ID User {getSortIcon('iduser')}
+                    {t('uscita:table.userId')} {getSortIcon('iduser')}
                   </th>
                   
                   <th 
                     onClick={() => handleSort('idship')}
                     className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
-                    title="Clicca per ordinare"
                   >
-                    Id Shipment {getSortIcon('idship')}
+                    {t('uscita:table.shipmentId')} {getSortIcon('idship')}
                   </th>
                 </tr>
               </thead>
@@ -762,10 +756,10 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
                       className="px-6 py-12 text-center text-gray-500"
                     >
                       {loading
-                        ? "Caricamento in corso..."
+                        ? t('common:actions.loading')
                         : searchTerm || statoFilter
-                        ? "Nessun risultato trovato per i filtri applicati"
-                        : "Nessun UDM trovato. Carica i dati."}
+                        ? t('uscita:table.noResults')
+                        : t('uscita:table.noData')}
                     </td>
                   </tr>
                 )}
@@ -776,9 +770,9 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
 
         {/* Footer info */}
         <div className="mt-6 text-center text-sm text-gray-600">
-          <p>
-            Totale UDM: <strong>{udmList.length}</strong>
-          </p>
+          <p dangerouslySetInnerHTML={{
+            __html: t('uscita:results.total', { count: udmList.length })
+          }} />
         </div>
       </div>
 
@@ -795,4 +789,3 @@ const UscitaPage = ({ user, onLogout, onNavigate }) => {
 };
 
 export default UscitaPage;
-

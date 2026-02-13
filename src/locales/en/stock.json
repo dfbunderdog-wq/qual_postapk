@@ -1,0 +1,55 @@
+{
+  "title": "Material Stock",
+  "subtitle": "Verify and manage warehouse stock",
+  
+  "fields": {
+    "udm": {
+      "label": "UDM (Handling Unit) - Multiple",
+      "placeholder": "Scan UDM",
+      "editMode": "Edit mode active - Enter one UDM per line",
+      "count": "{{count}} UDM entered"
+    },
+    "mappa": {
+      "label": "Map (Warehouse position) - Single",
+      "placeholder": "Scan or enter Map",
+      "editMode": "Edit mode active - Enter value manually"
+    }
+  },
+  
+  "buttons": {
+    "scanUdm": "Scan UDM",
+    "scanMappa": "Scan Map",
+    "edit": "Edit",
+    "save": "Save",
+    "reset": "Reset",
+    "confirm": "Confirm Stock",
+    "confirming": "Submitting..."
+  },
+  
+  "summary": {
+    "title": "Summary:",
+    "udmScanned": "Scanned UDM:",
+    "total": "Total: {{count}} UDM",
+    "mappa": "Map:"
+  },
+  
+  "messages": {
+    "udmRequired": "Enter at least one UDM",
+    "mappaRequired": "Enter Map code",
+    "udmSaved": "UDM value saved",
+    "mappaSaved": "Map value saved",
+    "success": "{{message}}",
+    "error": "Error confirming stock"
+  },
+  
+  "scanner": {
+    "udm": {
+      "title": "Multiple Scan",
+      "success": "{{count}} UDM codes scanned successfully!"
+    },
+    "mappa": {
+      "title": "Scan QR Code",
+      "success": "Map code scanned: {{code}}"
+    }
+  }
+}

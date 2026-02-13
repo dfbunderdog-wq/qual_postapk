@@ -1,0 +1,30 @@
+{
+  "title": "WMS Dashboard",
+  "subtitle": "Warehouse Management System",
+  "systemActive": "WMS System Active",
+  
+  "ricevimento": {
+    "title": "Material Reception",
+    "description": "Manage incoming goods",
+    "button": "Material Reception"
+  },
+  
+  "stock": {
+    "title": "Material Stock",
+    "description": "View inventory",
+    "button": "Material Stock"
+  },
+  
+  "uscita": {
+    "title": "Material Exit",
+    "description": "View UDM in warehouse",
+    "button": "Material Exit"
+  },
+  
+  "stats": {
+    "products": "Products",
+    "orders": "Orders",
+    "value": "Value",
+    "efficiency": "Efficiency"
+  }
+}

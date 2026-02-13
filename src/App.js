@@ -5,6 +5,7 @@ import RicevimentoPage from "./pages/RicevimentoPage";
 import StockPage from "./pages/StockPage";
 import UscitaPage from "./pages/UscitaPage";
 import { initSounds } from "./utils/soundEffects";
+import "./i18n"; // Import configurazione i18n
 
 const App = () => {
   const [currentPage, setCurrentPage] = useState("login");

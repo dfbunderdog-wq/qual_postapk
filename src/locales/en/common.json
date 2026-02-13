@@ -1,0 +1,43 @@
+{
+  "appName": "WMS System",
+  "appSubtitle": "Warehouse Management System",
+  
+  "actions": {
+    "login": "Login",
+    "logout": "Logout",
+    "register": "Register",
+    "save": "Save",
+    "cancel": "Cancel",
+    "reset": "Reset",
+    "confirm": "Confirm",
+    "close": "Close",
+    "back": "Back",
+    "search": "Search",
+    "loading": "Loading...",
+    "reload": "Reload",
+    "scan": "Scan"
+  },
+  
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "demoLogin": "Demo Login",
+    "noAccount": "Don't have an account? Register",
+    "hasAccount": "Already have an account? Login"
+  },
+  
+  "messages": {
+    "success": "Operation completed successfully",
+    "error": "An error occurred",
+    "sessionExpired": "Session expired. Please login again.",
+    "tokenMissing": "Authentication token missing. Please use real login, not Demo Login.",
+    "connectionError": "Server connection error"
+  },
+  
+  "user": {
+    "id": "ID",
+    "status": "Status"
+  }
+}

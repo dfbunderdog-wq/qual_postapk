@@ -1,0 +1,60 @@
+{
+  "title": "Material Exit",
+  "subtitle": "View all UDM in warehouse",
+  
+  "buttons": {
+    "scan": "Scan UDM",
+    "reload": "Reload",
+    "reloading": "Loading...",
+    "createShipment": "Create Shipment",
+    "deselectAll": "Deselect all"
+  },
+  
+  "search": {
+    "placeholder": "Search by UDM Code (use ; to search multiple UDM)...",
+    "multipleSearchHint": "Multiple search active: {{count}} UDM codes"
+  },
+  
+  "filters": {
+    "filterByStatus": "Filter by status:",
+    "all": "All"
+  },
+  
+  "table": {
+    "id": "ID",
+    "code": "UDM Code",
+    "status": "Status",
+    "insertDate": "Insert Date",
+    "transactionId": "Transaction ID",
+    "userId": "User ID",
+    "shipmentId": "Shipment ID",
+    "noResults": "No results found for applied filters",
+    "noData": "No UDM found. Load data."
+  },
+  
+  "results": {
+    "showing": "Showing <strong>{{filtered}}</strong> of <strong>{{total}}</strong> total UDM",
+    "filteredBy": "(filtered by: <strong>{{filter}}</strong>)",
+    "noResults": "No results",
+    "selected": "{{count}} UDM selected",
+    "total": "Total UDM: <strong>{{count}}</strong>"
+  },
+  
+  "messages": {
+    "loaded": "Loaded {{count}} UDM",
+    "noUdmFound": "No UDM found",
+    "shipmentCreated": "{{message}}",
+    "shipmentError": "Error creating shipment",
+    "cannotCreateShipment": "Impossible: one or more selected UDM already have a shipment ID"
+  },
+  
+  "warnings": {
+    "selectAtLeastOne": "Select at least one UDM to create shipment",
+    "someAlreadyShipped": "Warning: Some selected UDM already have an assigned shipment ID"
+  },
+  
+  "scanner": {
+    "title": "Multiple Scan",
+    "scannedSuccess": "{{count}} UDM codes scanned and added to filter!"
+  }
+}

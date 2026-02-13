@@ -7,10 +7,14 @@ import {
   CheckCircle,
   Printer,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { DIRECTUS_URL } from "../utils/constants";
 import { downloadPdf } from "../utils/pdfUtils";
+import LanguageSelector from "../components/LanguageSelector";
 
 const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
+  const { t } = useTranslation(['ricevimento', 'common']);
+  
   const [ricevimentoData, setRicevimentoData] = useState({
     partNumber: "",
     numeroPezzi: "",
@@ -40,7 +44,7 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
     if (!ricevimentoData.partNumber) {
       setMessage({
         type: "error",
-        text: "Inserire il Part Number",
+        text: t('ricevimento:messages.partNumberRequired'),
       });
       return;
     }
@@ -48,7 +52,7 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
     if (calcolaTotale() === 0) {
       setMessage({
         type: "error",
-        text: "Il totale pezzi deve essere maggiore di zero",
+        text: t('ricevimento:messages.totalMustBeGreaterThanZero'),
       });
       return;
     }
@@ -82,7 +86,7 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
     if (!token) {
       setMessage({
         type: "error",
-        text: "Token di autenticazione mancante. Effettua il login reale, non Demo Login.",
+        text: t('common:messages.tokenMissing'),
       });
       setLoading(false);
       return;
@@ -122,11 +126,10 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
 
         setMessage({
           type: procedureResult?.verificaCompletata ? "success" : "warning",
-          text:
-            procedureResult?.message ||
-            `Ricevimento confermato! Part Number: ${
-              ricevimentoData.partNumber
-            }, Totale: ${calcolaTotale()} pezzi`,
+          text: procedureResult?.message || 
+            t('ricevimento:messages.success', { 
+              message: `Part Number: ${ricevimentoData.partNumber}, Totale: ${calcolaTotale()} pezzi`
+            }),
         });
 
         // Reset del form dopo successo
@@ -138,18 +141,18 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
       } else if (response.status === 401) {
         setMessage({
           type: "error",
-          text: "Sessione scaduta. Effettua nuovamente il login.",
+          text: t('common:messages.sessionExpired'),
         });
       } else {
         setMessage({
           type: "error",
-          text: result.error || "Errore durante la conferma del ricevimento",
+          text: result.error || t('ricevimento:messages.error'),
         });
       }
     } catch (error) {
       setMessage({
         type: "error",
-        text: "Errore di connessione con il server",
+        text: t('common:messages.connectionError'),
       });
       console.error("Errore chiamata API:", error);
     } finally {
@@ -161,7 +164,9 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
     if (!lastTransactionId) {
       setMessage({
         type: "error",
-        text: "Nessun ricevimento da stampare. Conferma prima un ricevimento.",
+        text: t('ricevimento:print.noReceipt', { 
+          defaultValue: "Nessun ricevimento da stampare. Conferma prima un ricevimento." 
+        }),
       });
       return;
     }
@@ -190,7 +195,7 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
     if (!token) {
       setMessage({
         type: "error",
-        text: "Token di autenticazione mancante. Effettua il login.",
+        text: t('common:messages.tokenMissing'),
       });
       setLoadingPrint(false);
       return;
@@ -225,34 +230,34 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
 
           setMessage({
             type: "success",
-            text: `PDF con ${printResult.udm_count} etichette UDM scaricato!`,
+            text: t('ricevimento:print.success', { count: printResult.udm_count }),
           });
         } else {
           setMessage({
             type: "warning",
-            text: "Nessun PDF generato",
+            text: t('ricevimento:print.noLabels'),
           });
         }
       } else if (response.status === 404) {
         setMessage({
           type: "error",
-          text: "Nessun UDM trovato per questa transazione",
+          text: t('ricevimento:print.noUdm'),
         });
       } else if (response.status === 401) {
         setMessage({
           type: "error",
-          text: "Sessione scaduta. Effettua nuovamente il login.",
+          text: t('common:messages.sessionExpired'),
         });
       } else {
         setMessage({
           type: "error",
-          text: result.error || "Errore durante la generazione del PDF",
+          text: result.error || t('ricevimento:print.error'),
         });
       }
     } catch (error) {
       setMessage({
         type: "error",
-        text: "Errore di connessione con il server",
+        text: t('common:messages.connectionError'),
       });
       console.error("Errore chiamata stampa UDM:", error);
     } finally {
@@ -278,13 +283,18 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
                 <span className="text-gray-600">{user.email}</span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-gray-500">ID:</span>
+                <span className="text-gray-500">{t('common:user.id')}:</span>
                 <span className="text-gray-600">{user.id}</span>
               </div>
             </div>
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              {user.status}
-            </span>
+            
+            {/* Language Selector + Status */}
+            <div className="flex items-center gap-4">
+              <LanguageSelector />
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                {user.status}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -303,16 +313,16 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
-                  Ricevimento Materiale
+                  {t('ricevimento:title')}
                 </h1>
-                <p className="text-gray-600">Registra l'arrivo di nuova merce</p>
+                <p className="text-gray-600">{t('ricevimento:subtitle')}</p>
               </div>
             </div>
             <button
               onClick={onLogout}
               className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700"
             >
-              Logout
+              {t('common:actions.logout')}
             </button>
           </div>
         </div>
@@ -338,13 +348,13 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
         {/* Form Ricevimento */}
         <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
           <h2 className="text-2xl font-bold mb-6 text-gray-900">
-            Dati di Ricevimento
+            {t('ricevimento:form.title')}
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">
-                Part Number *
+                {t('ricevimento:form.partNumber.label')}
               </label>
               <input
                 type="text"
@@ -352,14 +362,14 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
                 value={ricevimentoData.partNumber}
                 onChange={handleRicevimentoChange}
                 className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-lg"
-                placeholder="Inserisci Part Number"
+                placeholder={t('ricevimento:form.partNumber.placeholder')}
                 disabled={loading}
               />
             </div>
 
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">
-                Numero Pezzi per Collo
+                {t('ricevimento:form.numeroPezzi.label')}
               </label>
               <input
                 type="number"
@@ -367,7 +377,7 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
                 value={ricevimentoData.numeroPezzi}
                 onChange={handleRicevimentoChange}
                 className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-lg"
-                placeholder="0"
+                placeholder={t('ricevimento:form.numeroPezzi.placeholder')}
                 min="0"
                 disabled={loading}
               />
@@ -375,7 +385,7 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
 
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">
-                Numero Colli
+                {t('ricevimento:form.numeroColli.label')}
               </label>
               <input
                 type="number"
@@ -383,7 +393,7 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
                 value={ricevimentoData.numeroColli}
                 onChange={handleRicevimentoChange}
                 className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-lg"
-                placeholder="0"
+                placeholder={t('ricevimento:form.numeroColli.placeholder')}
                 min="0"
                 disabled={loading}
               />
@@ -391,10 +401,10 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
 
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">
-                Totale Pezzi
+                {t('ricevimento:form.totalePezzi.label')}
               </label>
               <div className="w-full px-4 py-3 border-2 border-green-300 bg-green-50 rounded-lg text-lg font-bold text-green-800">
-                {calcolaTotale()} pezzi
+                {t('ricevimento:form.totalePezzi.value', { count: calcolaTotale() })}
               </div>
             </div>
           </div>
@@ -403,23 +413,23 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
           {ricevimentoData.partNumber &&
             (ricevimentoData.numeroPezzi || ricevimentoData.numeroColli) && (
               <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <h3 className="font-bold text-gray-900 mb-2">Riepilogo:</h3>
+                <h3 className="font-bold text-gray-900 mb-2">{t('ricevimento:summary.title')}</h3>
                 <div className="text-sm text-gray-700 space-y-1">
                   <p>
-                    <span className="font-medium">Part Number:</span>{" "}
+                    <span className="font-medium">{t('ricevimento:summary.partNumber')}</span>{" "}
                     {ricevimentoData.partNumber}
                   </p>
                   <p>
-                    <span className="font-medium">Pezzi per collo:</span>{" "}
+                    <span className="font-medium">{t('ricevimento:summary.piecesPerPackage')}</span>{" "}
                     {ricevimentoData.numeroPezzi || 0}
                   </p>
                   <p>
-                    <span className="font-medium">Numero colli:</span>{" "}
+                    <span className="font-medium">{t('ricevimento:summary.packages')}</span>{" "}
                     {ricevimentoData.numeroColli || 0}
                   </p>
                   <p className="text-lg font-bold text-green-600">
-                    <span className="font-medium">Totale:</span> {calcolaTotale()}{" "}
-                    pezzi
+                    <span className="font-medium">{t('ricevimento:summary.total')}</span> {calcolaTotale()}{" "}
+                    {t('ricevimento:form.totalePezzi.value', { count: calcolaTotale() }).split(' ')[1]}
                   </p>
                 </div>
               </div>
@@ -432,7 +442,7 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
               disabled={loading}
               className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Invio in corso..." : "Conferma Ricevimento"}
+              {loading ? t('ricevimento:buttons.confirming') : t('ricevimento:buttons.confirm')}
             </button>
             <button
               onClick={() =>
@@ -445,7 +455,7 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
               disabled={loading}
               className="flex-1 bg-gray-600 text-white py-3 px-6 rounded-lg hover:bg-gray-700 font-bold disabled:opacity-50"
             >
-              Reset
+              {t('ricevimento:buttons.reset')}
             </button>
           </div>
         </div>
@@ -456,13 +466,12 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
             <div className="flex items-center mb-4">
               <Printer className="h-6 w-6 text-purple-600 mr-3" />
               <h2 className="text-2xl font-bold text-gray-900">
-                Stampa Etichette UDM
+                {t('ricevimento:print.title')}
               </h2>
             </div>
 
             <p className="text-gray-600 mb-6">
-              Il ricevimento è stato confermato. Puoi ora generare le etichette UDM
-              con QR code.
+              {t('ricevimento:print.description')}
             </p>
 
             <button
@@ -471,11 +480,11 @@ const RicevimentoPage = ({ user, onLogout, onNavigate }) => {
               className="w-full bg-purple-600 text-white py-3 px-6 rounded-lg hover:bg-purple-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {loadingPrint ? (
-                "Generazione PDF in corso..."
+                t('ricevimento:print.generating')
               ) : (
                 <>
                   <Printer className="h-5 w-5 mr-2" />
-                  Genera PDF Etichette UDM
+                  {t('ricevimento:print.button')}
                 </>
               )}
             </button>

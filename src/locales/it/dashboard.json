@@ -1,0 +1,30 @@
+{
+  "title": "WMS Dashboard",
+  "subtitle": "Warehouse Management System",
+  "systemActive": "Sistema WMS Attivo",
+  
+  "ricevimento": {
+    "title": "Ricevimento Materiale",
+    "description": "Gestisci arrivo nuova merce",
+    "button": "Ricevimento Materiale"
+  },
+  
+  "stock": {
+    "title": "Stock Materiale",
+    "description": "Visualizza inventario",
+    "button": "Stock Materiale"
+  },
+  
+  "uscita": {
+    "title": "Uscita Materiale",
+    "description": "Visualizza UDM in magazzino",
+    "button": "Uscita Materiale"
+  },
+  
+  "stats": {
+    "products": "Prodotti",
+    "orders": "Ordini",
+    "value": "Valore",
+    "efficiency": "Efficienza"
+  }
+}

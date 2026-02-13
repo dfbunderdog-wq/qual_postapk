@@ -1,0 +1,56 @@
+{
+  "title": "Material Reception",
+  "subtitle": "Register incoming goods",
+  
+  "form": {
+    "title": "Reception Data",
+    "partNumber": {
+      "label": "Part Number *",
+      "placeholder": "Enter Part Number"
+    },
+    "numeroPezzi": {
+      "label": "Pieces per Package",
+      "placeholder": "0"
+    },
+    "numeroColli": {
+      "label": "Number of Packages",
+      "placeholder": "0"
+    },
+    "totalePezzi": {
+      "label": "Total Pieces",
+      "value": "{{count}} pieces"
+    }
+  },
+  
+  "summary": {
+    "title": "Summary:",
+    "partNumber": "Part Number:",
+    "piecesPerPackage": "Pieces per package:",
+    "packages": "Number of packages:",
+    "total": "Total:"
+  },
+  
+  "buttons": {
+    "confirm": "Confirm Reception",
+    "confirming": "Submitting...",
+    "reset": "Reset"
+  },
+  
+  "print": {
+    "title": "Print UDM Labels",
+    "description": "Reception confirmed. You can now generate UDM labels with QR code.",
+    "button": "Generate PDF UDM Labels",
+    "generating": "Generating PDF...",
+    "success": "PDF with {{count}} UDM labels downloaded!",
+    "noLabels": "No PDF generated",
+    "noUdm": "No UDM found for this transaction",
+    "error": "Error generating PDF"
+  },
+  
+  "messages": {
+    "partNumberRequired": "Enter Part Number",
+    "totalMustBeGreaterThanZero": "Total pieces must be greater than zero",
+    "success": "{{message}}",
+    "error": "Error confirming reception"
+  }
+}

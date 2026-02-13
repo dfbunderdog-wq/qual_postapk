@@ -1,0 +1,56 @@
+{
+  "title": "Ricevimento Materiale",
+  "subtitle": "Registra l'arrivo di nuova merce",
+  
+  "form": {
+    "title": "Dati di Ricevimento",
+    "partNumber": {
+      "label": "Part Number *",
+      "placeholder": "Inserisci Part Number"
+    },
+    "numeroPezzi": {
+      "label": "Numero Pezzi per Collo",
+      "placeholder": "0"
+    },
+    "numeroColli": {
+      "label": "Numero Colli",
+      "placeholder": "0"
+    },
+    "totalePezzi": {
+      "label": "Totale Pezzi",
+      "value": "{{count}} pezzi"
+    }
+  },
+  
+  "summary": {
+    "title": "Riepilogo:",
+    "partNumber": "Part Number:",
+    "piecesPerPackage": "Pezzi per collo:",
+    "packages": "Numero colli:",
+    "total": "Totale:"
+  },
+  
+  "buttons": {
+    "confirm": "Conferma Ricevimento",
+    "confirming": "Invio in corso...",
+    "reset": "Reset"
+  },
+  
+  "print": {
+    "title": "Stampa Etichette UDM",
+    "description": "Il ricevimento è stato confermato. Puoi ora generare le etichette UDM con QR code.",
+    "button": "Genera PDF Etichette UDM",
+    "generating": "Generazione PDF in corso...",
+    "success": "PDF con {{count}} etichette UDM scaricato!",
+    "noLabels": "Nessun PDF generato",
+    "noUdm": "Nessun UDM trovato per questa transazione",
+    "error": "Errore durante la generazione del PDF"
+  },
+  
+  "messages": {
+    "partNumberRequired": "Inserire il Part Number",
+    "totalMustBeGreaterThanZero": "Il totale pezzi deve essere maggiore di zero",
+    "success": "{{message}}",
+    "error": "Errore durante la conferma del ricevimento"
+  }
+}

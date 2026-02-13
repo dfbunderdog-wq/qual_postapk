@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import { Eye, EyeOff, Package, AlertCircle, CheckCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { DIRECTUS_URL } from "../utils/constants";
+import LanguageSelector from "../components/LanguageSelector";
 
 const LoginPage = ({ onLogin }) => {
+  const { t } = useTranslation('common');
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -29,7 +32,6 @@ const LoginPage = ({ onLogin }) => {
       const response = await fetch(`${DIRECTUS_URL}/users`, {
         method: "POST",
         mode: "cors",
-        // credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -47,7 +49,9 @@ const LoginPage = ({ onLogin }) => {
       if (response.ok) {
         setMessage({
           type: "success",
-          text: "Registrazione completata! Ora puoi effettuare il login.",
+          text: t('messages.registrationSuccess', { 
+            defaultValue: "Registrazione completata! Ora puoi effettuare il login." 
+          }),
         });
         setIsLogin(true);
         setFormData({
@@ -59,13 +63,17 @@ const LoginPage = ({ onLogin }) => {
       } else {
         setMessage({
           type: "error",
-          text: data.errors?.[0]?.message || "Errore durante la registrazione",
+          text: data.errors?.[0]?.message || t('messages.registrationError', {
+            defaultValue: "Errore durante la registrazione"
+          }),
         });
       }
     } catch (error) {
       setMessage({
         type: "error",
-        text: "Errore di connessione. Verifica configurazione Directus.",
+        text: t('messages.directusConfigError', {
+          defaultValue: "Errore di connessione. Verifica configurazione Directus."
+        }),
       });
     } finally {
       setLoading(false);
@@ -80,7 +88,6 @@ const LoginPage = ({ onLogin }) => {
       const response = await fetch(`${DIRECTUS_URL}/auth/login`, {
         method: "POST",
         mode: "cors",
-        // credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -98,7 +105,6 @@ const LoginPage = ({ onLogin }) => {
 
         const userResponse = await fetch(`${DIRECTUS_URL}/users/me`, {
           mode: "cors",
-          // credentials: "include",
           headers: {
             Authorization: `Bearer ${data.data.access_token}`,
           },
@@ -111,13 +117,17 @@ const LoginPage = ({ onLogin }) => {
       } else {
         setMessage({
           type: "error",
-          text: data.errors?.[0]?.message || "Credenziali non valide",
+          text: data.errors?.[0]?.message || t('messages.invalidCredentials', {
+            defaultValue: "Credenziali non valide"
+          }),
         });
       }
     } catch (error) {
       setMessage({
         type: "error",
-        text: "Errore di connessione. Avvia con HTTPS=true npm start per server HTTPS.",
+        text: t('messages.httpsError', {
+          defaultValue: "Errore di connessione. Avvia con HTTPS=true npm start per server HTTPS."
+        }),
       });
     } finally {
       setLoading(false);
@@ -143,12 +153,17 @@ const LoginPage = ({ onLogin }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
+        {/* Language Selector - Top Right */}
+        <div className="flex justify-end mb-4">
+          <LanguageSelector />
+        </div>
+
         <div className="text-center mb-8">
           <div className="bg-indigo-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
             <Package className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">WMS System</h1>
-          <p className="text-gray-600">Warehouse Management System</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">{t('appName')}</h1>
+          <p className="text-gray-600">{t('appSubtitle')}</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl p-8">
@@ -161,7 +176,7 @@ const LoginPage = ({ onLogin }) => {
               }`}
               onClick={() => setIsLogin(true)}
             >
-              Login
+              {t('actions.login')}
             </button>
             <button
               className={`flex-1 py-3 px-4 text-sm font-semibold rounded-lg ml-2 ${
@@ -171,7 +186,7 @@ const LoginPage = ({ onLogin }) => {
               }`}
               onClick={() => setIsLogin(false)}
             >
-              Registrazione
+              {t('actions.register')}
             </button>
           </div>
 
@@ -179,7 +194,7 @@ const LoginPage = ({ onLogin }) => {
             onClick={demoLogin}
             className="w-full bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600 font-semibold mb-4"
           >
-            🚀 Demo Login
+            🚀 {t('auth.demoLogin')}
           </button>
 
           {message.text && (
@@ -203,7 +218,7 @@ const LoginPage = ({ onLogin }) => {
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Nome
+                  {t('auth.firstName')}
                 </label>
                 <input
                   type="text"
@@ -211,12 +226,12 @@ const LoginPage = ({ onLogin }) => {
                   value={formData.first_name}
                   onChange={handleInputChange}
                   className="w-full px-3 py-3 border border-gray-300 rounded-lg"
-                  placeholder="Nome"
+                  placeholder={t('auth.firstName')}
                 />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Cognome
+                  {t('auth.lastName')}
                 </label>
                 <input
                   type="text"
@@ -224,7 +239,7 @@ const LoginPage = ({ onLogin }) => {
                   value={formData.last_name}
                   onChange={handleInputChange}
                   className="w-full px-3 py-3 border border-gray-300 rounded-lg"
-                  placeholder="Cognome"
+                  placeholder={t('auth.lastName')}
                 />
               </div>
             </div>
@@ -232,7 +247,7 @@ const LoginPage = ({ onLogin }) => {
 
           <div className="mb-4">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Email
+              {t('auth.email')}
             </label>
             <input
               type="email"
@@ -246,7 +261,7 @@ const LoginPage = ({ onLogin }) => {
 
           <div className="mb-6">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Password
+              {t('auth.password')}
             </label>
             <div className="relative">
               <input
@@ -255,7 +270,7 @@ const LoginPage = ({ onLogin }) => {
                 value={formData.password}
                 onChange={handleInputChange}
                 className="w-full px-3 py-3 border border-gray-300 rounded-lg pr-10"
-                placeholder="Password"
+                placeholder={t('auth.password')}
               />
               <button
                 type="button"
@@ -276,7 +291,12 @@ const LoginPage = ({ onLogin }) => {
             disabled={loading}
             className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-semibold"
           >
-            {loading ? "Caricamento..." : isLogin ? "Accedi" : "Registrati"}
+            {loading 
+              ? t('actions.loading') 
+              : isLogin 
+                ? t('actions.login') 
+                : t('actions.register')
+            }
           </button>
 
           <div className="mt-6 text-center">
@@ -284,9 +304,7 @@ const LoginPage = ({ onLogin }) => {
               onClick={toggleForm}
               className="text-indigo-600 hover:text-indigo-800 text-sm"
             >
-              {isLogin
-                ? "Non hai un account? Registrati"
-                : "Hai già un account? Accedi"}
+              {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}
             </button>
           </div>
         </div>

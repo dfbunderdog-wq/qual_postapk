@@ -1,0 +1,60 @@
+{
+  "title": "Uscita Materiale",
+  "subtitle": "Visualizza tutti gli UDM in magazzino",
+  
+  "buttons": {
+    "scan": "Scansiona UDM",
+    "reload": "Ricarica",
+    "reloading": "Caricamento...",
+    "createShipment": "Crea Spedizione",
+    "deselectAll": "Deseleziona tutti"
+  },
+  
+  "search": {
+    "placeholder": "Cerca per Codice UDM (usa ; per cercare più UDM)...",
+    "multipleSearchHint": "Ricerca multipla attiva: {{count}} codici UDM"
+  },
+  
+  "filters": {
+    "filterByStatus": "Filtra per stato:",
+    "all": "Tutti"
+  },
+  
+  "table": {
+    "id": "ID",
+    "code": "Codice UDM",
+    "status": "Stato",
+    "insertDate": "Data Inserimento",
+    "transactionId": "ID Transazione",
+    "userId": "ID User",
+    "shipmentId": "Id Shipment",
+    "noResults": "Nessun risultato trovato per i filtri applicati",
+    "noData": "Nessun UDM trovato. Carica i dati."
+  },
+  
+  "results": {
+    "showing": "Visualizzati <strong>{{filtered}}</strong> di <strong>{{total}}</strong> UDM totali",
+    "filteredBy": "(filtrati per: <strong>{{filter}}</strong>)",
+    "noResults": "Nessun risultato",
+    "selected": "{{count}} UDM selezionati",
+    "total": "Totale UDM: <strong>{{count}}</strong>"
+  },
+  
+  "messages": {
+    "loaded": "Caricati {{count}} UDM",
+    "noUdmFound": "Nessun UDM trovato",
+    "shipmentCreated": "{{message}}",
+    "shipmentError": "Errore durante la creazione della spedizione",
+    "cannotCreateShipment": "Impossibile: uno o più UDM selezionati hanno già un ID spedizione"
+  },
+  
+  "warnings": {
+    "selectAtLeastOne": "Seleziona almeno un UDM per creare la spedizione",
+    "someAlreadyShipped": "Attenzione: Alcuni UDM selezionati hanno già un ID spedizione assegnato"
+  },
+  
+  "scanner": {
+    "title": "Scansione Multipla",
+    "scannedSuccess": "{{count}} codici UDM scansionati e aggiunti al filtro!"
+  }
+}
