@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.wms.app',
-  appName: 'qual_temporaneo',
+  appId: 'easy.stock.wms',
+  appName: 'Easy Stock',
   webDir: 'build',
   server: {
     androidScheme: 'https'
